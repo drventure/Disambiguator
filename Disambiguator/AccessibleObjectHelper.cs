@@ -8,7 +8,7 @@ using Accessibility;
 
 namespace Disambiguator
 {
-	internal static class AccessibleObjectHelper
+	internal static class Accessible
 	{
 		[DllImport("oleacc.dll", ExactSpelling = true, PreserveSig = false)]
 		[return: MarshalAs(UnmanagedType.Interface)]
@@ -29,13 +29,13 @@ namespace Disambiguator
 		private const uint OBJID_CLIENT = 0xFFFFFFFC;
 		private const uint OBJID_CARET = 0xFFFFFFF8;
 
-		public static IAccessible GetAccessibleObjectFromWindow(IntPtr hwnd, uint objectID = 0)
+		public static IAccessible ObjectFromWindow(IntPtr hwnd, uint objectID = 0)
 		{
 			return (IAccessible)AccessibleObjectFromWindow(hwnd, objectID, IID_IAccessible);
 		}
 
 
-		public static IEnumerable<IAccessible> GetChildren(IAccessible parent)
+		public static IEnumerable<IAccessible> Children(this IAccessible parent)
 		{
 			var children = new object[parent.accChildCount];
 
@@ -58,7 +58,7 @@ namespace Disambiguator
 		}
 
 
-		public static IntPtr GetWindowHandleFromAccessibleObject(IAccessible accessibleObject)
+		public static IntPtr WindowHandle(this IAccessible accessibleObject)
 		{
 			IntPtr hwnd;
 			WindowFromAccessibleObject(accessibleObject, out hwnd);
@@ -66,17 +66,17 @@ namespace Disambiguator
 		}
 
 
-		public static IAccessible FindChild(IAccessible parent, AccessibleRole? role = null, string customRole = null, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
+		public static IAccessible FindChild(this IAccessible parent, AccessibleRole? role = null, string customRole = null, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
 		{
 			if (parent == null)
 			{
 				return null;
 			}
 
-			var children = GetChildren(parent).ToList();
+			var children = parent.Children().ToList();
 			foreach (var child in children)
 			{
-				if (AccessibleObjectMatchesConditions(child, role, customRole, hasState, hasNotState))
+				if (child.MatchesConditions(role, customRole, hasState, hasNotState))
 				{
 					return child;
 				}
@@ -85,12 +85,12 @@ namespace Disambiguator
 		}
 
 
-		public static IAccessible FindAncestor(IAccessible child, AccessibleRole? role = null, string customRole = null, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
+		public static IAccessible FindAncestor(this IAccessible child, AccessibleRole? role = null, string customRole = null, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
 		{
 			var parent = child;
 			while(parent != null)
 			{
-				if (AccessibleObjectMatchesConditions(parent, role, customRole, hasState, hasNotState))
+				if (child.MatchesConditions(role, customRole, hasState, hasNotState))
 				{
 					return parent;
 				}
@@ -100,7 +100,7 @@ namespace Disambiguator
 		}
 
 
-		private static bool AccessibleObjectMatchesConditions(IAccessible accessibleObject, AccessibleRole? role, string customRole, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
+		private static bool MatchesConditions(this IAccessible accessibleObject, AccessibleRole? role, string customRole, AccessibleStates? hasState = null, AccessibleStates? hasNotState = null)
 		{
 			try
 			{
@@ -126,13 +126,13 @@ namespace Disambiguator
 		}
 
 
-		public static bool HasState(IAccessible accessibleObject, AccessibleStates state)
+		public static bool HasState(this IAccessible accessibleObject, AccessibleStates state)
 		{
 			return ((AccessibleStates)accessibleObject.accState[0] & state) != 0;
 		}
 
 
-		public static string SafeGetValue(IAccessible accessibleObject)
+		public static string SafeGetValue(this IAccessible accessibleObject)
 		{
 			try
 			{
@@ -145,7 +145,7 @@ namespace Disambiguator
 		}
 
 
-		public static string SafeGetName(IAccessible accessibleObject)
+		public static string SafeGetName(this IAccessible accessibleObject)
 		{
 			try
 			{

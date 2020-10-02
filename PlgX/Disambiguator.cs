@@ -182,7 +182,7 @@ namespace Disambiguator
 		public string getParam(ref string value, string key)
 		{
 			string param = string.Empty;
-			var rx = new Regex($"\\{{{key}:(?<paramValue>.*)\\}}", RegexOptions.IgnoreCase);
+			var rx = new Regex(string.Format("\\{{{0}:(?<paramValue>.*)\\}}", key), RegexOptions.IgnoreCase);
 			var rxmatches = rx.Matches(value);
 			//there really should only be one match in the string
 			if (rxmatches.Count == 1)
