@@ -5,8 +5,9 @@ VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2AC352E9-90C2-4BFA-9B85-89F24B675B40}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		CreatePlgX.bat = CreatePlgX.bat
-		Releases\PackageRelease.bat = Releases\PackageRelease.bat
+		PackageRelease.bat = PackageRelease.bat
 		PlgXExclude.txt = PlgXExclude.txt
 		Readme.txt = Readme.txt
 	EndProjectSection

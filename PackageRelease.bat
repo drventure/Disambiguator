@@ -1,5 +1,6 @@
 @echo off
-set version=0.0.1
+
+set version=0.0.2
 set output=%~dp0Releases\v%version%\
 set zipfile="%output%Disambiguator-v%version%.zip"
 set buildoutputs="%~dp0Releases\Build Outputs"

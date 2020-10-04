@@ -128,6 +128,29 @@ namespace Disambiguator
 			    exeParam = getParam(ref matchTemplate, "exe");
 				ctlParam = getParam(ref matchTemplate, "ctl");
 				_reportFlag = getFlag(ref matchTemplate, "report");
+
+				if (_reportFlag)
+                {
+					if (!string.IsNullOrEmpty(exeParam))
+					{
+						ReportLine("EXE tag detected. Searching for \"" + exeParam + "\"");
+					} else
+                    {
+						ReportLine("No EXE tag detected.");
+					}
+					if (!string.IsNullOrEmpty(ctlParam))
+					{
+						ReportLine("CTL tag detected. Searching for \"" + ctlParam + "\"");
+					}
+					else
+					{
+						ReportLine("No CTL tag detected.");
+					}
+
+					ReportLine("Application of current target window: \"" + exePath + "\"");
+					ReportLine("");
+				}
+
 				if (!string.IsNullOrEmpty(exeParam))
 				{
 					if (exeParam.Contains(@"\"))
@@ -164,7 +187,9 @@ namespace Disambiguator
 			var title = e.TargetWindowTitle ?? string.Empty;
 			match = match && IsAMatch(title, matchTemplate);
 
-			if (match)
+			//if reporting is on we DO NOT want to match
+			//NOTE that other entries with reporting OFF +may still match+
+			if (match && !_reportFlag)
 			{
 				e.AddSequence(string.IsNullOrEmpty(sequence) ? e.Entry.GetAutoTypeSequence() : sequence);
 			}
@@ -193,18 +218,26 @@ namespace Disambiguator
 
 				// Find all children of this parent
 				AutomationElementCollection elementCollection = parent.FindAll(TreeScope.Descendants, condition);
+				var match = false;
 				foreach (AutomationElement child in elementCollection)
 				{
 					var childID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+					var childName = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+					var childClass = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
 					ReportLine(string.Format("  Child ID: {0}", childID));
-					if (IsAMatch(childID, ctlParam))
+					ReportLine(string.Format("          Name: {0}", childName));
+					ReportLine(string.Format("          ClassName: {0}", childClass));
+					if (IsAMatch(childID, ctlParam) || 
+						IsAMatch(childName, ctlParam) || 
+						IsAMatch(childClass, ctlParam))
 					{
-						ReportLine("Match Found");
-						return true;
+						ReportLine("!!!! ENTRY MATCHED !!!!\r\n");
+						match = true;
+						if (!_reportFlag) return true;
 					}
 				}
+				if (!match) ReportLine("\r\nNo Match Found");
 			}
-			ReportLine("No Match Found");
 			return false;
 		}
 
