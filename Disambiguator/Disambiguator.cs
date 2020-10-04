@@ -12,7 +12,6 @@ using System.Text;
 using System.Runtime.ConstrainedExecution;
 using System.Security;
 
-using Accessibility;
 using System.Windows.Automation;
 
 using KeePass;
@@ -155,11 +154,10 @@ namespace Disambiguator
 				//no match yet, check for any child controls
 
 				//attempt to retrieve an accessible object from the target window handle
-				var accObject = Accessible.ObjectFromWindow(e.TargetWindowHandle);
 				var uiaObject = AutomationElement.FromHandle(e.TargetWindowHandle);
 
 				//and scan through it's child objects
-				match = RecurseChildObjects(accObject, ctlParam);
+				match = ScanControlTree(uiaObject, ctlParam);
 			}
 
 			//and lastly, the winName must match as well to be considered
@@ -179,23 +177,31 @@ namespace Disambiguator
 		}
 
 
-		private bool RecurseChildObjects(IAccessible parent, string ctlParam)
+		private bool ScanControlTree(AutomationElement parent, string ctlParam)
         {
 			if (parent != null)
 			{
-				ReportLine(string.Format("Parent Name: {0}   Value: {1}", parent.SafeGetName(), parent.SafeGetValue()));
-				foreach (var child in parent.Children())
+				var parentID = parent.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
+				ReportLine(string.Format("Parent ID: {0}", parentID));
+
+				//use an always true OR condition
+				//probably a better way to do this, but this'll work for now.
+				var condition = new OrCondition(
+					new PropertyCondition(AutomationElement.IsEnabledProperty, true),
+					new PropertyCondition(AutomationElement.IsEnabledProperty, false)
+				);
+
+				// Find all children of this parent
+				AutomationElementCollection elementCollection = parent.FindAll(TreeScope.Descendants, condition);
+				foreach (AutomationElement child in elementCollection)
 				{
-					ReportLine(string.Format("  Child Name: {0}   Value: {1}", child.SafeGetName(), child.SafeGetValue()));
-					if (IsAMatch(child.SafeGetName(), ctlParam))
+					var childID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+					ReportLine(string.Format("  Child ID: {0}", childID));
+					if (IsAMatch(childID, ctlParam))
 					{
-						ReportLine("!!Match Found");
+						ReportLine("Match Found");
 						return true;
 					}
-					if (RecurseChildObjects(child, ctlParam))
-                    {
-						return true;
-                    }
 				}
 			}
 			ReportLine("No Match Found");
