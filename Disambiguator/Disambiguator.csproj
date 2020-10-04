@@ -126,46 +126,8 @@
       PostBuildMacros;
     </PostBuildEventDependsOn>
     <PostBuildEvent>IF $(ConfigurationName)==Release (
-echo !!!!!!!!BUILD THE PLGX!!!!!!!!!!!!!
-cd /D $(SolutionDir)
-mkdir "$(SolutionDir)Releases"
-mkdir "$(SolutionDir)Releases\Build Outputs"
-
-echo Deleting existing PlgX folder
-rmdir /s /q PlgX
-
-echo Creating PlgX folder
-mkdir PlgX
-
-echo Copying files
-xcopy "Disambiguator" PlgX /s /e /exclude:PlgXExclude.txt
-
-echo Compiling PlgX
-".\Disambiguator\KeePass.exe" /plgx-create "$(SolutionDir)PlgX" --plgx-prereq-os:Windows
-
-echo Releasing PlgX
-move /y "$(SolutionDir)PlgX.plgx" "Releases\Build Outputs\Disambiguator.plgx"
-
-echo Cleaning up
-REM rmdir /s /q PlgX
-
-echo !!!!!!!!! PACKAGE THE RELEASE !!!!!!!!!!!!!!
-echo Remove any existing output folder to start fresh
-rmdir /s /q "$(SolutionDir)Releases\v@(VersionNumber)"
-
-echo Create to target version dir
-mkdir "$(SolutionDir)Releases\v@(VersionNumber)"
-
-echo Copy the Readme over
-copy "$(SolutionDir)Readme.txt" "$(SolutionDir)Releases\Build Outputs"
-
-echo Zip up the output files, change to the build outputs dir
-echo so that all files in the zip will not have any relative paths
-cd /D "$(SolutionDir)Releases\Build Outputs"
-"%25ProgramW6432%25\7-Zip\7z.exe" a -tzip -mx9 -bd "$(SolutionDir)Releases\v@(VersionNumber)\Disambiguator-v@(VersionNumber).zip" *
-
-echo Copy the readme also to the final output dir
-copy "$(SolutionDir)Readme.txt" "$(SolutionDir)Releases\v@(VersionNumber)"
+CreatePlgx.bat
+PackageRelease.bat @(VersionNumber)
 )</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
