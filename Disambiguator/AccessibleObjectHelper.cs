@@ -24,6 +24,7 @@ namespace Disambiguator
 		private static extern uint AccessibleChildren(IAccessible paccContainer, int iChildStart, int cChildren, [Out] object[] rgvarChildren, out int pcObtained);
 
 		private static readonly Guid IID_IAccessible = new Guid("{618736E0-3C3D-11CF-810C-00AA00389B71}");
+		private static readonly Guid IID_IAccessibleEx = new Guid("{f8b80ada-2c44-48d0-89be-5ff23c9cd875}");
 
 		private const int NAVDIR_FIRSTCHILD = 7;
 		private const uint OBJID_CLIENT = 0xFFFFFFFC;
@@ -140,7 +141,7 @@ namespace Disambiguator
 			}
 			catch (Exception)
 			{
-				return null;
+				return string.Empty;
 			}
 		}
 
@@ -153,7 +154,7 @@ namespace Disambiguator
 			}
 			catch (Exception)
 			{
-				return null;
+				return string.Empty;
 			}
 		}
 	}

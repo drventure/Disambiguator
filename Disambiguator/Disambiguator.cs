@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +13,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Security;
 
 using Accessibility;
+using System.Windows.Automation;
+
 using KeePass;
 using KeePass.Plugins;
 using KeePass.Forms;
@@ -35,18 +36,7 @@ namespace Disambiguator
 	public sealed class DisambiguatorExt : Plugin
 	{
 		private IPluginHost _keePassHost;
-
-		internal const string UrlAutoTypeWindowTitlePrefix = "??:URL:";
-		private const string OptionsConfigRoot = "Disambiguator.";
-		private const string ExtraControlsName = "DisambiguatorControls";
-		private const string ExistingControlsContainerName = "DisambiguatorOriginalControls";
-
-		private Dictionary<int, string> mUrlForAutoTypeEvent = new Dictionary<int, string>();
-		private ToolStripMenuItem _optionsMenu;
-		private int _createEntryHotkeyId;
-
-		private readonly HashSet<int> _foundSequence = new HashSet<int>();
-		private FieldInfo _searchTextBoxField;
+		private bool _reportFlag = false;
 
 		public override string UpdateUrl
 		{
@@ -56,6 +46,8 @@ namespace Disambiguator
 
 		public override bool Initialize(IPluginHost host)
 		{
+			Debug.WriteLine("Disambiguator Starting...");
+
 			Debug.Assert(host != null);
 			if (host == null) return false;
 
@@ -113,14 +105,17 @@ namespace Disambiguator
 
 		public void ResolveSequence(string winName, string sequence, SequenceQueryEventArgs e)
 		{
+			//clear all parms and flags
 			string exeParam = string.Empty;
 			string ctlParam = string.Empty;
+			_reportFlag = false;
 
 			var exePath = getExecutableFromHwnd(e.TargetWindowHandle).ToLower();
 
 			//get the window name (this would usually contain the TITLE of the window
 			//that would match
 			if (winName == null) return;
+			var matchTemplate = winName;
 
 			var match = false;
 			if (!match)
@@ -129,10 +124,11 @@ namespace Disambiguator
 				//and try it
 
 				//first compile the window name to replace all KeePass elements
-				winName = SprEngine.Compile(winName, new SprContext(e.Entry, e.Database, SprCompileFlags.All));
+				matchTemplate = SprEngine.Compile(matchTemplate, new SprContext(e.Entry, e.Database, SprCompileFlags.All));
 
-			    exeParam = getParam(ref winName, "exe");
-				ctlParam = getParam(ref winName, "ctl");
+			    exeParam = getParam(ref matchTemplate, "exe");
+				ctlParam = getParam(ref matchTemplate, "ctl");
+				_reportFlag = getFlag(ref matchTemplate, "report");
 				if (!string.IsNullOrEmpty(exeParam))
 				{
 					if (exeParam.Contains(@"\"))
@@ -154,12 +150,13 @@ namespace Disambiguator
 				}
 			}
 
-			if (!match)
+			if (!match && !string.IsNullOrEmpty(ctlParam))
             {
 				//no match yet, check for any child controls
 
 				//attempt to retrieve an accessible object from the target window handle
 				var accObject = Accessible.ObjectFromWindow(e.TargetWindowHandle);
+				var uiaObject = AutomationElement.FromHandle(e.TargetWindowHandle);
 
 				//and scan through it's child objects
 				match = RecurseChildObjects(accObject, ctlParam);
@@ -167,7 +164,7 @@ namespace Disambiguator
 
 			//and lastly, the winName must match as well to be considered
 			var title = e.TargetWindowTitle ?? string.Empty;
-			match = match && IsAMatch(title, winName);
+			match = match && IsAMatch(title, matchTemplate);
 
 			if (match)
 			{
@@ -176,20 +173,35 @@ namespace Disambiguator
 		}
 
 
+		private void ReportLine(string output)
+        {
+			if (_reportFlag) TestOutput.WriteLine(output);
+		}
+
+
 		private bool RecurseChildObjects(IAccessible parent, string ctlParam)
         {
 			if (parent != null)
 			{
+				ReportLine(string.Format("Parent Name: {0}   Value: {1}", parent.SafeGetName(), parent.SafeGetValue()));
 				foreach (var child in parent.Children())
 				{
+					ReportLine(string.Format("  Child Name: {0}   Value: {1}", child.SafeGetName(), child.SafeGetValue()));
 					if (IsAMatch(child.SafeGetName(), ctlParam))
 					{
+						ReportLine("!!Match Found");
 						return true;
 					}
+					if (RecurseChildObjects(child, ctlParam))
+                    {
+						return true;
+                    }
 				}
 			}
+			ReportLine("No Match Found");
 			return false;
 		}
+
 
 		/// <summary>
 		/// Parse a {} delimited named param from a string
@@ -201,7 +213,7 @@ namespace Disambiguator
 		public string getParam(ref string value, string key)
 		{
 			string param = string.Empty;
-			var rx = new Regex(string.Format("\\{{{0}:(?<paramValue>.*)\\}}", key), RegexOptions.IgnoreCase);
+			var rx = new Regex(string.Format("\\{{{0}:(?<paramValue>.*?)\\}}", key), RegexOptions.IgnoreCase);
 			var rxmatches = rx.Matches(value);
 			//there really should only be one match in the string
 			if (rxmatches.Count == 1)
@@ -215,8 +227,36 @@ namespace Disambiguator
 		}
 
 
+		/// <summary>
+		/// Parse a {} delimited named flag from a string
+		/// Only honor the first instance.
+		/// A flag is just a name in {}
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		public bool getFlag(ref string value, string key)
+		{
+			string param = string.Empty;
+			var rx = new Regex(string.Format("\\{{{0}\\}}", key), RegexOptions.IgnoreCase);
+			var rxmatches = rx.Matches(value);
+			//there really should only be one match in the string
+			if (rxmatches.Count == 1)
+			{
+				Match rxmatch = rxmatches[0];
+				//remove the flag from the input string
+				value = value.Substring(0, rxmatch.Index) + value.Substring(rxmatch.Index + rxmatch.Length);
+				return true;
+			}
+			return false;
+		}
+
+
 		public bool IsAMatch(string value, string matchPattern)
 		{
+			if (string.IsNullOrEmpty(value)) return false;
+			if (string.IsNullOrEmpty(matchPattern)) return false;
+
 			//check if the targetname is actually a regex
 			// it'll be "//regex here//" if it is
 			bool bRegex = matchPattern.StartsWith(@"//") && matchPattern.EndsWith(@"//") && (matchPattern.Length > 4);
@@ -304,6 +344,9 @@ namespace Disambiguator
 			AutoType.SequenceQuery -= AutoType_SequenceQuery;
 			AutoType.SequenceQueriesBegin -= AutoType_SequenceQueriesBegin;
 			AutoType.SequenceQueriesEnd -= AutoType_SequenceQueriesEnd;
+
+			//make sure this form (if it exists) is closed.
+			TestOutput.Release();
 		}
 	}
 }
