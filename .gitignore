@@ -17,7 +17,7 @@
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
-[Rr]eleases/
+[Rr]eleases/Build Outputs
 x64/
 x86/
 [Aa][Rr][Mm]/
@@ -341,3 +341,5 @@ healthchecksdb
 
 #PlgX temp folder
 Plgx/
+
+#Example folder
