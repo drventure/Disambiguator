@@ -4,3 +4,6 @@
 .sln
 .suo
 .pdb
+.plgx
+.exe
+.exe.config

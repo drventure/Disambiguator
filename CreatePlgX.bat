@@ -18,10 +18,11 @@ echo Copying files
 xcopy "Disambiguator" PlgX /s /e /exclude:PlgXExclude.txt
 
 echo Compiling PlgX
-".\Disambiguator\KeePass.exe" /plgx-create "%~dp0PlgX" --plgx-prereq-os:Windows
+".\Disambiguator\KeePass.exe" --plgx-create "%~dp0PlgX" --plgx-prereq-os:Windows
 
 echo Releasing PlgX
 move /y PlgX.plgx ".\Releases\Build Outputs\Disambiguator.plgx"
+copy /y ".\Releases\Build Outputs\Disambiguator.plgx" ".\Disambiguator\Plugins\Disambiguator.plgx"
 copy "%~dp0Readme.txt" ".\Releases\Build Outputs\"
 
 echo Cleaning up

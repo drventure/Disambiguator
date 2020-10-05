@@ -14,6 +14,7 @@ echo Remove Output Version folder %output% to start fresh
 if exist "%output%\NUL" rmdir /s /q "%output%"
 
 pushd "%buildoutputs%"
+echo 7Zip is at %ProgramFiles%\7-Zip\7z.exe
 "%ProgramFiles%\7-Zip\7z.exe" a -tzip -mx9 -bd "%zipfile%" *
 popd
 copy "%~dp0Readme.txt" "%output%\"
