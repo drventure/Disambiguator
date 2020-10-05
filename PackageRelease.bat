@@ -1,10 +1,10 @@
 echo on
 echo !!!!!! Packaging Release !!!!!!
+echo For this script to execute properly, you must have the 32bit 7Zip application installed.
 
 cd /D %~dp0
 
 echo Setting up
-echo Current Dir is %CD%
 set version=%1
 set buildoutputs=%~dp0Releases\Build Outputs
 set output=%~dp0Releases\v%version%
@@ -14,7 +14,6 @@ echo Remove Output Version folder %output% to start fresh
 if exist "%output%\NUL" rmdir /s /q "%output%"
 
 pushd "%buildoutputs%"
-echo 7Zip is at %ProgramFiles%\7-Zip\7z.exe
 "%ProgramFiles%\7-Zip\7z.exe" a -tzip -mx9 -bd "%zipfile%" *
 popd
 copy "%~dp0Readme.txt" "%output%\"
