@@ -5,7 +5,7 @@ https://github.com/drventure/Disambiguator
 
 This is a plugin to KeePass <http://www.KeePass.info> to allow the AutoType functionality to
 work by ALSO matching the associated application file (the root EXE of the matched window)
-as well as matching a control or control value of a child control within the target window. 
+as well as matching a child control name or value within the target window. 
 This allows a much finer grained control of matching that just window title alone.
 
 For example, it's a fairly common occurrance to have two different applications both prompt
@@ -17,6 +17,9 @@ forced to display the "Credential Chooser" window and make the user decide.
 With Disambiguator, you can specify the actual Application Name in the Window Title Matching 
 template string, which can then be used to tell one application's "Enter Password" dialog
 from another.
+
+You can also specify a particular control name or property value that, if detected, can
+be used to choose a particular credential entry of others.
 
 
 Features
