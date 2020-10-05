@@ -126,8 +126,9 @@
       PostBuildMacros;
     </PostBuildEventDependsOn>
     <PostBuildEvent>IF $(ConfigurationName)==Release (
-CreatePlgx.bat
-PackageRelease.bat @(VersionNumber)
+cd /D "$(SolutionDir)"
+call CreatePlgx.bat
+call PackageRelease.bat @(VersionNumber)
 )</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
