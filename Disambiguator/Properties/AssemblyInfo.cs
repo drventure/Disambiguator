@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 
 // General assembly properties
-[assembly: AssemblyTitle("Disambiguator")]
+[assembly: AssemblyTitle("The Disambiguator")]
 [assembly: AssemblyDescription("Enable Matching Based App EXE names and child control properties")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("drventure")]
@@ -18,6 +18,6 @@ using System.Runtime.InteropServices;
 [assembly: Guid("28241D0D-62D3-43A9-9355-B4016AA2F91E")]
 
 // Assembly version information
-[assembly: AssemblyVersion("0.0.2.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
 
-[assembly: AssemblyFileVersion("0.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
