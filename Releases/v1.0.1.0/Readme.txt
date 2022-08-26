@@ -167,6 +167,9 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.0.0
+Official first release version.
+
 v0.0.2
 Added support for the {ctl:} and {report} tags.
 Removed dead code.
