@@ -1,0 +1,2 @@
+Using accessibility framework
+https://docs.microsoft.com/en-us/dotnet/framework/ui-automation/invoke-a-control-using-ui-automation

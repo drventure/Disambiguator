@@ -161,12 +161,15 @@ project by CEPOCTb and a derived project by Alex Vallat.
 
 Bug Reporting, Questions, Comments, Feedback, Donations
 -------------------------------------------------------
-Please use the SourceForge project page: <http://sourceforge.net/projects/disambiguator>
-Bugs can be reported using the issue tracker, for anything else, a discussion forum is available.
+Please use the GitHub project page: <https://github.com/drventure/Disambiguator>
+Bugs can be reported using the issue tracker, for anything else, a wiki is available.
 
 
 Changelog
 --------
+v1.0.0.0
+Official first release version.
+
 v0.0.2
 Added support for the {ctl:} and {report} tags.
 Removed dead code.
