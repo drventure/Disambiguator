@@ -172,12 +172,16 @@ namespace Disambiguator
 				}
 			}
 
-			if (!match && !string.IsNullOrEmpty(ctlParam))
+			//We always want to enumerate child controls when reporting
+			if (_reportFlag || (!match && !string.IsNullOrEmpty(ctlParam)))
             {
 				//no match yet, check for any child controls
+				ReportLine("Scanning Descendant Controls...");
 
 				//attempt to retrieve an accessible object from the target window handle
 				var uiaObject = AutomationElement.FromHandle(e.TargetWindowHandle);
+
+				ReportLine(string.Format("TargetWindow: {0} Resolved: {1}", e.TargetWindowHandle, uiaObject != null));
 
 				//and scan through it's child objects
 				match = ScanControlTree(uiaObject, ctlParam);
@@ -211,13 +215,13 @@ namespace Disambiguator
 
 				//use an always true OR condition
 				//probably a better way to do this, but this'll work for now.
-				var condition = new OrCondition(
-					new PropertyCondition(AutomationElement.IsEnabledProperty, true),
-					new PropertyCondition(AutomationElement.IsEnabledProperty, false)
-				);
+				//var condition = new OrCondition(
+				//	new PropertyCondition(AutomationElement.IsEnabledProperty, true),
+				//	new PropertyCondition(AutomationElement.IsEnabledProperty, false)
+				//);
 
 				// Find all children of this parent
-				AutomationElementCollection elementCollection = parent.FindAll(TreeScope.Descendants, condition);
+				AutomationElementCollection elementCollection = parent.FindAll(TreeScope.Subtree, Condition.TrueCondition);
 				var match = false;
 				foreach (AutomationElement child in elementCollection)
 				{
