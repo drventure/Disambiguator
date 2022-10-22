@@ -39,7 +39,7 @@ namespace Disambiguator
 
 		public override string UpdateUrl
 		{
-			get { return "sourceforge-version://Disambiguator/appmatch?-v(%5B%5Cd.%5D%2B)%5C.zip"; }
+			get { return "https://github.com/drventure/Disambiguator/raw/master/VERSION"; }
 		}
 
 
