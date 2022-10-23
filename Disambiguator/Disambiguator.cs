@@ -84,7 +84,7 @@ namespace Disambiguator
 
 		private void AutoType_SequenceQuery(object sender, SequenceQueryEventArgs e)
 		{
-			//main win title and Autotype sequence for this entry
+			//main win title and AutoType sequence for this entry
 			//we have to check this separately from the custom associations
 			var targetWindowTitle = e.Entry.Strings.ReadSafe("Title");
 			string entryAutoTypeSequence = e.Entry.GetAutoTypeSequence();
@@ -155,7 +155,7 @@ namespace Disambiguator
 				{
 					if (exeParam.Contains(@"\"))
 					{
-						//param looks like it's got a path element, so compare to the whole exename
+						//parameter looks like it's got a path element, so compare to the whole exeName
 						match = (IsAMatch(exePath, exeParam));
 					}
 					else
@@ -247,7 +247,7 @@ namespace Disambiguator
 
 
 		/// <summary>
-		/// Parse a {} delimited named param from a string
+		/// Parse a {} delimited named parameter from a string
 		/// Only honor the first instance
 		/// </summary>
 		/// <param name="value"></param>
@@ -300,7 +300,7 @@ namespace Disambiguator
 			if (string.IsNullOrEmpty(value)) return false;
 			if (string.IsNullOrEmpty(matchPattern)) return false;
 
-			//check if the targetname is actually a regex
+			//check if the targetName is actually a regex
 			// it'll be "//regex here//" if it is
 			bool bRegex = matchPattern.StartsWith(@"//") && matchPattern.EndsWith(@"//") && (matchPattern.Length > 4);
 			Regex objRegex = null;
