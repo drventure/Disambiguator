@@ -136,8 +136,7 @@
     </PostBuildEventDependsOn>
     <PostBuildEvent>IF $(ConfigurationName)==Release (
 cd /D "$(SolutionDir)"
-call CreatePlgx.bat
-call PackageRelease.bat @(VersionNumber)
+call CreatePlgx.bat @(VersionNumber)
 )</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

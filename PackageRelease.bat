@@ -1,9 +1,32 @@
-echo on
-echo !!!!!! Packaging Release !!!!!!
-echo For this script to execute properly, you must have the 32bit 7Zip application installed.
+@echo off
+REM Run this to package up a release properly
+REM Usage:
+REM 
+REM     PackageRelease {version}
+REM 
+REM where {version} is the version of the release you'd like to use.
+REM 
+REM Example
+REM     PackageRelease 1.0.0.1
+
+echo.
+echo.
+echo Building The Disambiguator, a Keepass plugin
+echo.
+echo.
 
 cd /D %~dp0
+if EXIST "%ProgramFiles%\7-Zip\7z.exe" goto CheckVersion
+echo %ProgramFiles%\7-Zip\7z.exe not found.
+echo For this script to execute properly, you must have the 32bit 7Zip application installed.
+goto Done
 
+:CheckVersion
+if %1. NEQ . goto Continue
+echo Please specify a complete version (a.b.c.d) when running this bat file.
+goto Done
+
+:Continue
 echo Setting up
 set version=%1
 set buildoutputs=%~dp0Releases\Build Outputs
@@ -34,3 +57,7 @@ set output=
 set zipfile=
 set buildoutputs=
 set versionfile=
+
+echo Build complete.
+
+:Done
