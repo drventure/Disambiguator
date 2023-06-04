@@ -39,7 +39,7 @@ namespace Disambiguator
 
 		public override string UpdateUrl
 		{
-			get { return "https://github.com/drventure/Disambiguator/raw/master/VERSION"; }
+			get { return "https://raw.githubusercontent.com/drventure/Disambiguator/master/VERSION"; }
 		}
 
 
