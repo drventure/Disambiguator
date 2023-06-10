@@ -14,6 +14,7 @@ namespace Disambiguator
     public partial class TestOutput : Form
     {
         private static TestOutput _window = null;
+        private Button btnCopyToClipboard;
 
 
         /// <summary>
@@ -44,6 +45,7 @@ namespace Disambiguator
         {
             this.btnClose = new System.Windows.Forms.Button();
             this.tbxOutput = new System.Windows.Forms.TextBox();
+            this.btnCopyToClipboard = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnClose
@@ -72,6 +74,18 @@ namespace Disambiguator
             this.tbxOutput.TabIndex = 1;
             this.tbxOutput.WordWrap = false;
             // 
+            // btnCopyToClipboard
+            // 
+            this.btnCopyToClipboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCopyToClipboard.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.btnCopyToClipboard.Location = new System.Drawing.Point(13, 390);
+            this.btnCopyToClipboard.Name = "btnCopyToClipboard";
+            this.btnCopyToClipboard.Size = new System.Drawing.Size(197, 48);
+            this.btnCopyToClipboard.TabIndex = 2;
+            this.btnCopyToClipboard.Text = "Copy to Clipboard";
+            this.btnCopyToClipboard.UseVisualStyleBackColor = true;
+            this.btnCopyToClipboard.Click += new System.EventHandler(this.btnCopyToClipboard_Click);
+            // 
             // TestOutput
             // 
             this.AcceptButton = this.btnClose;
@@ -79,6 +93,7 @@ namespace Disambiguator
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnClose;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.btnCopyToClipboard);
             this.Controls.Add(this.tbxOutput);
             this.Controls.Add(this.btnClose);
             this.Name = "TestOutput";
@@ -107,24 +122,30 @@ namespace Disambiguator
         }
 
 
+        public static void WriteLine(string template, params object[] args)
+        {
+            var buf = string.Format(template, args);
+            WriteLine(buf); 
+        }
+
+
         public static void WriteLine(string output)
         {
             if (_window == null)
             {
                 _window = new TestOutput();
-                _window.Show();
             }
 
-            _window.Show();
-            _window.iWriteLine(output);
+            _window.WriteBuffer(output);
         }
 
 
-        private void iWriteLine(string output)
+        private void WriteBuffer(string output)
         {
             this.InvokeIfRequired(o =>
             {
-                tbxOutput.Text = tbxOutput.Text + output + "\r\n";
+                if (!_window.Visible) _window.Show();
+                this.tbxOutput.Text = this.tbxOutput.Text + output + "\r\n";
             });
         }
 
@@ -138,6 +159,20 @@ namespace Disambiguator
         private void btnClose_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+
+        private void btnCopyToClipboard_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Clipboard.SetText(tbxOutput.Text);
+                System.Media.SystemSounds.Beep.Play();
+            }
+            catch 
+            {
+                System.Media.SystemSounds.Exclamation.Play();
+            }
         }
     }
 

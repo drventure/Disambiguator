@@ -91,7 +91,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Disambiguator.cs" />
+    <Compile Include="DisambiguatorExt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestOutput.cs">
       <SubType>Form</SubType>
