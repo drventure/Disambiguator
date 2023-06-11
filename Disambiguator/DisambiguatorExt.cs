@@ -27,6 +27,7 @@ using KeePassLib.Security;
 using KeePassLib.Cryptography.PasswordGenerator;
 using System.Net.NetworkInformation;
 
+
 namespace Disambiguator
 {
     /// <summary>
@@ -35,7 +36,22 @@ namespace Disambiguator
     public sealed class DisambiguatorExt : Plugin
     {
         private IPluginHost _keePassHost;
-        private bool _reportFlag = false;
+
+        /// <summary>
+        /// has reports been turned on in UI
+        /// </summary>
+        private bool _reportOn = false;
+
+        /// <summary>
+        /// is reporting on for this invocation
+        /// </summary>
+        private bool _report = false;
+        
+        private string _exePath = null;
+        private string _exeFile = null;
+        private int _matchCount = 0;
+        private List<UIElement> _currentUIElements = null;
+
 
         public override string UpdateUrl
         {
@@ -113,68 +129,161 @@ namespace Disambiguator
         {
             var menuItem = sender as ToolStripMenuItem;
 
-            _reportFlag = menuItem.Checked;
-            MessageBox.Show(string.Format("Disambiguator Reporting is {0}", _reportFlag ? "Enabled" : "Disabled"));
+            _reportOn = menuItem.Checked;
+            if (_reportOn)
+            {
+                MessageBox.Show("Disambiguator Reporting is now enabled\r\n\r\n" +
+                    "With reporting on, pressing the AutoType hotkey will instead\r\n" +
+                    "evaluate the target application and display a report of the\r\n" +
+                    "executable name and various control details you can use\r\n" +
+                    "to pinpoint the specific autotype sequence to use."
+                    , "The Disambiguator");
+            }
+            else
+            {
+                MessageBox.Show("Disambiguator Reporting is now disabled\r\n\r\n" +
+                    "Standard autotype functionality will now resume."
+                    , "The Disambiguator");
+            }
         }
 
 
         private void OnEntryOptionsClicked(object sender, EventArgs e)
         {
-            MessageBox.Show("Only for test right now");
+            //MessageBox.Show("Only for test right now");
         }
 
 
         private void OnTrayOptionsClicked(object sender, EventArgs e)
         {
-            MessageBox.Show("Only for test right now");
+            //MessageBox.Show("Only for test right now");
         }
 
 
         private void OnGroupOptionsClicked(object sender, EventArgs e)
         {
-            MessageBox.Show("Only for test right now");
+            //MessageBox.Show("Only for test right now");
         }
 
 
         private void OnMainOptionsClicked(object sender, EventArgs e)
         {
-            MessageBox.Show("Only for test right now");
+            //MessageBox.Show("Only for test right now");
         }
 
 
         /// <summary>
-        /// Not used at this point, because this plugin just adds additional
-        /// filtering based on Window Class and hosting app
+        /// Event fired once when AutoType is invoked for a target window
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void AutoType_SequenceQueriesBegin(object sender, SequenceQueriesEventArgs e)
         {
             Debug("Sequence Queries Begin");
+
+            _exePath = getExecutableFromHwnd(e.TargetWindowHandle).ToLower();
+            _exeFile = Path.GetFileName(_exePath);
+            _report = _reportOn;
+            _matchCount = 0;
+
+            //traverse the control tree for the target window to collect
+            //a list of UIelements that we can use to disambiguate
+            _currentUIElements = TraverseControlTree(e.TargetWindowHandle);
+
+            //once the target app is analyzed, show any report window (if applicable)
+            TestOutput.ShowOnTop();
         }
 
 
         /// <summary>
-        /// Not used at this point, because this plugin just adds additional
-        /// filtering based on Window Class and hosting app
+        /// Traverse the control tree from the parent element and build of a list of control elements to be tested
+        /// Do this only once per invocation because it could be expensive
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="ctlParam"></param>
+        /// <returns></returns>
+        private List<UIElement> TraverseControlTree(IntPtr targetWindowHandle)
+        {
+            Debug("Traversing Control Tree...");
+            var uiElements = new List<UIElement>();
+
+            try
+            {
+                ReportWrite("   Application of current target window: \"{0}\"", _exePath);
+
+                //attempt to retrieve an accessible object from the target window handle
+                var uiaObject = AutomationElement.FromHandle(targetWindowHandle);
+
+                ReportWrite("   TargetWindow: {0} Resolved: {1}", targetWindowHandle, uiaObject != null);
+
+                if (uiaObject != null)
+                {
+                    var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
+                    ReportWrite("   Parent ID: {0}", parentID);
+
+                    //use an always true OR condition
+                    //probably a better way to do this, but this'll work for now.
+                    //var condition = new OrCondition(
+                    //	new PropertyCondition(AutomationElement.IsEnabledProperty, true),
+                    //	new PropertyCondition(AutomationElement.IsEnabledProperty, false)
+                    //);
+
+                    // Find all children of this parent
+                    AutomationElementCollection elementCollection = uiaObject.FindAll(TreeScope.Subtree, Condition.TrueCondition);
+                    foreach (AutomationElement child in elementCollection)
+                    {
+                        var uiElement = new UIElement()
+                        {
+                            ID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
+                            Name = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
+                            Class = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
+                        };
+                        uiElements.Add(uiElement);
+                        ReportWrite("   Child ID: {0}", uiElement.ID);
+                        ReportWrite("      Name : {0}", uiElement.Name);
+                        ReportWrite("      Class: {0}", uiElement.Class);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug("Error while traversing Target App: " + ex.ToString());
+                MessageBox.Show("An error was encountered:\r\n" + ex.ToString());
+            }
+            return uiElements;
+        }
+
+
+        /// <summary>
+        /// Event fired once when Autotype sequence processes is complete
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void AutoType_SequenceQueriesEnd(object sender, SequenceQueriesEventArgs e)
         {
-            Debug("Sequence Queries End");
+            Debug("Sequence Queries End. {0} Matched Sequences", _matchCount);
+            _currentUIElements = null;
         }
 
 
+        /// <summary>
+        /// Event fired for each possible sequence to allow us to determine
+        /// whether the target window matches the provided sequence
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AutoType_SequenceQuery(object sender, SequenceQueryEventArgs e)
         {
+            //if reporting is on, we don't actually try to match anything
+            if (_report) return;
+
             //main win title and AutoType sequence for this entry
             //we have to check this separately from the custom associations
-            var targetWindowTitle = e.Entry.Strings.ReadSafe("Title");
+            var autoTypeSequenceTitle = e.Entry.Strings.ReadSafe("Title");
             string entryAutoTypeSequence = e.Entry.GetAutoTypeSequence();
 
-            Debug("ResolveSequence for TargetWindowTitle {0}", targetWindowTitle);
-            ResolveSequence(targetWindowTitle, entryAutoTypeSequence, e);
+            Debug("ResolveSequence for AutoType Sequence Title");
+            ResolveSequence(autoTypeSequenceTitle, entryAutoTypeSequence, e);
 
             //run through the target window associations looking for match elements
             foreach (AutoTypeAssociation association in e.Entry.AutoType.Associations)
@@ -182,7 +291,7 @@ namespace Disambiguator
                 //get the window name (this would usually contain the TITLE of the window
                 //that would match
                 var winName = association.WindowName;
-                Debug("ResolveSequence for AutoTypeAssoc {0}", winName);
+                Debug("ResolveSequence for AutoType Association Name");
                 ResolveSequence(winName, association.Sequence, e);
             }
 
@@ -192,13 +301,10 @@ namespace Disambiguator
 
         public void ResolveSequence(string winName, string sequence, SequenceQueryEventArgs e)
         {
-            Debug("ResolveSequence winName={0}  sequence={1}  eventId={2}  DBName={3}  TargetTitle={4}  TargetHandle={5}", winName, sequence, e.EventID, e.Database.Name, e.TargetWindowTitle, e.TargetWindowHandle);
-
             //clear all parameters and flags
             string exeParam = string.Empty;
             string ctlParam = string.Empty;
-
-            var exePath = getExecutableFromHwnd(e.TargetWindowHandle).ToLower();
+            var match = false;
 
             //get the window name (this would usually contain the TITLE of the window
             //that would match
@@ -207,48 +313,25 @@ namespace Disambiguator
                 Debug("Empty WindowName detected");
                 return;
             }
-            var matchTemplate = winName;
 
-            var match = false;
+            Debug("ResolveSequence winName={0}  sequence={1}  eventId={2}  TargetTitle={3}  TargetHandle={4}", winName, sequence, e.EventID, e.TargetWindowTitle, e.TargetWindowHandle);
+
             //next remove any app out of the window name
             //and try it
 
             //first compile the window name to replace all KeePass elements
-            matchTemplate = SprEngine.Compile(matchTemplate, new SprContext(e.Entry, e.Database, SprCompileFlags.All));
+            var matchTemplate = SprEngine.Compile(winName, new SprContext(e.Entry, e.Database, SprCompileFlags.All));
 
             exeParam = getParam(ref matchTemplate, "exe");
             ctlParam = getParam(ref matchTemplate, "ctl");
-            _reportFlag = _reportFlag || getFlag(ref matchTemplate, "report");
-
-            if (_reportFlag)
-            {
-                if (!string.IsNullOrEmpty(exeParam))
-                {
-                    ReportLine("EXE tag detected. Searching for \"{0}\"", exeParam);
-                }
-                else
-                {
-                    ReportLine("No EXE tag detected.");
-                }
-                if (!string.IsNullOrEmpty(ctlParam))
-                {
-                    ReportLine("CTL tag detected. Searching for \"{0}\"", ctlParam);
-                }
-                else
-                {
-                    ReportLine("No CTL tag detected.");
-                }
-
-                ReportLine("Application of current target window: \"{0}\"", exePath);
-                ReportLine("");
-            }
-
+ 
             if (!string.IsNullOrEmpty(exeParam))
             {
+                Debug("Searching for EXE tag \"{0}\"", exeParam);
                 if (exeParam.Contains(@"\"))
                 {
                     //parameter looks like it's got a path element, so compare to the whole exeName
-                    match = (IsAMatch(exePath, exeParam));
+                    match = (IsAMatch(_exePath, exeParam));
                 }
                 else
                 {
@@ -259,98 +342,71 @@ namespace Disambiguator
                         //add an exe extension by default if none specified
                         exeParam += ".exe";
                     }
-                    match = (IsAMatch(Path.GetFileName(exePath), exeParam));
+                    match = (IsAMatch(_exeFile, exeParam));
                 }
             }
 
-            //We always want to enumerate child controls when reporting
-            if (_reportFlag || (!match && !string.IsNullOrEmpty(ctlParam)))
+            //Always enumerate child controls when reporting
+            if (!match && !string.IsNullOrEmpty(ctlParam))
             {
+                Debug("Searching for CTL tag \"{0}\"", ctlParam);
                 //no match yet, check for any child controls
-                ReportLine("Scanning Descendant Controls...");
-
-                //attempt to retrieve an accessible object from the target window handle
-                var uiaObject = AutomationElement.FromHandle(e.TargetWindowHandle);
-
-                ReportLine("TargetWindow: {0} Resolved: {1}", e.TargetWindowHandle, uiaObject != null);
-
-                //and scan through it's child objects
-                match = ScanControlTree(uiaObject, ctlParam);
+                Debug("Scanning Descendant Controls...");
+                match = ScanControlTree(_currentUIElements, ctlParam);
             }
 
-            //and lastly, the winName must match as well to be considered
+            //Lastly, the winName must match as well to be considered
             var title = e.TargetWindowTitle ?? string.Empty;
-            match = match && IsAMatch(title, matchTemplate);
+            var titleMatch = IsAMatch(title, matchTemplate);
+            Debug("Checking for Window Title Match, title={0}, match={1}", title, titleMatch);
+            match = match && titleMatch;
 
             //if reporting is on we DO NOT want to match
             //NOTE that other entries with reporting OFF +may still match+
-            if (match && !_reportFlag)
+            if (match)
             {
+                Debug("Adding Sequence to found list");
                 e.AddSequence(string.IsNullOrEmpty(sequence) ? e.Entry.GetAutoTypeSequence() : sequence);
+                _matchCount++;
             }
         }
 
 
         /// <summary>
-        /// Write a line to the report output window with formatting
+        /// Scan the already generated list of UIElements for the current target of this Autotype
+        /// invocation, looking for any control matches
         /// </summary>
-        /// <param name="template"></param>
-        /// <param name="args"></param>
-        private void ReportLine(string template, params object[] args)
+        /// <param name="uiElements"></param>
+        /// <param name="ctlParam"></param>
+        /// <returns></returns>
+        private bool ScanControlTree(List<UIElement> uiElements, string ctlParam)
         {
-            if (_reportFlag)
+            Debug("Testing Target UI Elements using ctlParam {0}", ctlParam);
+
+            var matches = uiElements.Where(u => IsAMatch(u.ID, ctlParam) || IsAMatch(u.Name, ctlParam) || IsAMatch(u.Class, ctlParam)).ToList();
+            if (matches.Any())
             {
-                Debug(template, args);
-                TestOutput.WriteLine(template, args);
-            }
-        }
-
-
-        private bool ScanControlTree(AutomationElement parent, string ctlParam)
-        {
-            Debug("Scanning Control Tree");
-            if (parent != null)
-            {
-                var parentID = parent.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
-                ReportLine("Parent ID: {0}", parentID);
-
-                //use an always true OR condition
-                //probably a better way to do this, but this'll work for now.
-                //var condition = new OrCondition(
-                //	new PropertyCondition(AutomationElement.IsEnabledProperty, true),
-                //	new PropertyCondition(AutomationElement.IsEnabledProperty, false)
-                //);
-
-                // Find all children of this parent
-                AutomationElementCollection elementCollection = parent.FindAll(TreeScope.Subtree, Condition.TrueCondition);
-                var match = false;
-                foreach (AutomationElement child in elementCollection)
+                Debug("!!!! MATCHED {0} ENTRIES !!!!", matches.Count);
+                matches.ForEach(m => Debug("  Matched on ID:{0} Name{1} Class{2}", m.ID, m.Name, m.Class));
+                if (!_report)
                 {
-                    var childID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
-                    var childName = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
-                    var childClass = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
-                    ReportLine("  Child ID: {0}", childID);
-                    ReportLine("          Name: {0}", childName);
-                    ReportLine("          ClassName: {0}", childClass);
-                    if (IsAMatch(childID, ctlParam) ||
-                        IsAMatch(childName, ctlParam) ||
-                        IsAMatch(childClass, ctlParam))
-                    {
-                        ReportLine("!!!! ENTRY MATCHED !!!!\r\n");
-                        match = true;
-                        if (!_reportFlag)
-                        {
-                            Debug("ScanControlTree returning true");
-                            return true;
-                        }
-                    }
+                    return true;
                 }
-                if (!match) ReportLine("\r\nNo Match Found");
             }
+            else
+            {
+                Debug("No Match Found");
+            }
+
             Debug("ScanControlTree returning false");
             return false;
         }
 
+
+        /// <summary>
+        /// used to cache and precompute regexes
+        /// </summary>
+        private static Dictionary<string, Regex> _regexes = new Dictionary<string, Regex>();
 
         /// <summary>
         /// Parse a {} delimited named parameter from a string
@@ -362,15 +418,17 @@ namespace Disambiguator
         public string getParam(ref string value, string key)
         {
             string param = string.Empty;
-            var rx = new Regex(string.Format("\\{{{0}:(?<paramValue>.*?)\\}}", key), RegexOptions.IgnoreCase);
-            var rxmatches = rx.Matches(value);
+            Regex rx;
+            _regexes.TryGetValue(key, out rx);
+            if (rx == null) rx = new Regex(string.Format("\\{{{0}:(?<paramValue>.*?)\\}}", key), RegexOptions.IgnoreCase);
+            var rxMatches = rx.Matches(value);
             //there really should only be one match in the string
-            if (rxmatches.Count == 1)
+            if (rxMatches.Count == 1)
             {
-                Match rxmatch = rxmatches[0];
-                var rxgroup = rxmatch.Groups["paramValue"];
-                param = rxgroup.Value;
-                value = value.Substring(0, rxmatch.Index) + value.Substring(rxmatch.Index + rxmatch.Length);
+                Match rxMatch = rxMatches[0];
+                var rxGroup = rxMatch.Groups["paramValue"];
+                param = rxGroup.Value;
+                value = value.Substring(0, rxMatch.Index) + value.Substring(rxMatch.Index + rxMatch.Length);
             }
             return param;
         }
@@ -401,7 +459,13 @@ namespace Disambiguator
         }
 
 
-        public bool IsAMatch(string value, string matchPattern)
+        /// <summary>
+        /// Checks a string value for a match against the matchPattern
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="matchPattern"></param>
+        /// <returns></returns>
+        private bool IsAMatch(string value, string matchPattern)
         {
             if (string.IsNullOrEmpty(value)) return false;
             if (string.IsNullOrEmpty(matchPattern)) return false;
@@ -527,5 +591,34 @@ namespace Disambiguator
             {
             }
         }
+
+
+        /// <summary>
+        /// Write an empty line to the report
+        /// </summary>
+        private void ReportWrite() { ReportWrite(""); }
+
+
+        /// <summary>
+        /// Write a line to the report output window with formatting
+        /// </summary>
+        /// <param name="template"></param>
+        /// <param name="args"></param>
+        private void ReportWrite(string template, params object[] args)
+        {
+            if (_report)
+            {
+                if (!string.IsNullOrEmpty(template)) Debug("REPORT: " + template, args);
+                TestOutput.WriteLine(template, args);
+            }
+        }
+    }
+
+
+    internal class UIElement
+    {
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public string Class { get; set; }
     }
 }

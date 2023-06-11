@@ -93,6 +93,8 @@
     </Compile>
     <Compile Include="DisambiguatorExt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SetClipboardHelper.cs" />
+    <Compile Include="STAHelper.cs" />
     <Compile Include="TestOutput.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace Disambiguator
 {
-    public partial class TestOutput : Form
+    internal partial class TestOutput : Form
     {
         private static TestOutput _window = null;
         private Button btnCopyToClipboard;
@@ -76,7 +76,7 @@ namespace Disambiguator
             // 
             // btnCopyToClipboard
             // 
-            this.btnCopyToClipboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCopyToClipboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btnCopyToClipboard.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCopyToClipboard.Location = new System.Drawing.Point(13, 390);
             this.btnCopyToClipboard.Name = "btnCopyToClipboard";
@@ -97,7 +97,7 @@ namespace Disambiguator
             this.Controls.Add(this.tbxOutput);
             this.Controls.Add(this.btnClose);
             this.Name = "TestOutput";
-            this.Text = "Available Controls";
+            this.Text = "Disambiguation Details Report";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TestOutput_FormClosed);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -110,26 +110,26 @@ namespace Disambiguator
         private System.Windows.Forms.TextBox tbxOutput;
 
 
-        public TestOutput()
+        internal TestOutput()
         {
             InitializeComponent();
         }
 
 
-        public static void Release()
+        internal static void Release()
         {
             if (_window != null) _window.InvokeIfRequired(o => o.Close());
         }
 
 
-        public static void WriteLine(string template, params object[] args)
+        internal static void WriteLine(string template, params object[] args)
         {
             var buf = string.Format(template, args);
             WriteLine(buf); 
         }
 
 
-        public static void WriteLine(string output)
+        internal static void WriteLine(string output)
         {
             if (_window == null)
             {
@@ -144,9 +144,25 @@ namespace Disambiguator
         {
             this.InvokeIfRequired(o =>
             {
-                if (!_window.Visible) _window.Show();
-                this.tbxOutput.Text = this.tbxOutput.Text + output + "\r\n";
+                //if (!_window.Visible) TestOutput.ShowOnTop();
+                this.tbxOutput.AppendText(output + "\r\n");
+                this.tbxOutput.Refresh();
             });
+        }
+
+
+        internal static void ShowOnTop()
+        {
+            if (_window != null)
+            {
+                _window.InvokeIfRequired(o =>
+                {
+                    _window.Show();
+                    _window.BringToFront();
+                    _window.tbxOutput.SelectionStart = _window.tbxOutput.Text.Length;
+                    _window.tbxOutput.ScrollToCaret();
+                });
+            }
         }
 
 
@@ -166,7 +182,7 @@ namespace Disambiguator
         {
             try
             {
-                Clipboard.SetText(tbxOutput.Text);
+                new SetClipboardHelper(DataFormats.Text, tbxOutput.Text).Go();
                 System.Media.SystemSounds.Beep.Play();
             }
             catch 
