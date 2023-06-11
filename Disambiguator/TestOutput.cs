@@ -182,7 +182,7 @@ namespace Disambiguator
         {
             try
             {
-                new SetClipboardHelper(DataFormats.Text, tbxOutput.Text).Go();
+                Clipboard.SetText(tbxOutput.Text);
                 System.Media.SystemSounds.Beep.Play();
             }
             catch 
