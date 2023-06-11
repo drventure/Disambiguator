@@ -43,6 +43,11 @@ namespace Disambiguator
         private bool _reportOn = false;
 
         /// <summary>
+        /// used to turn logging on or off dynamically
+        /// </summary>
+        private static bool _loggingOn = false;
+
+        /// <summary>
         /// is reporting on for this invocation
         /// </summary>
         private bool _report = false;
@@ -98,6 +103,22 @@ namespace Disambiguator
                     };
                     subMenu.Click += this.OnSetReportClicked;
                     menuItem.DropDownItems.Add(subMenu);
+
+                    subMenu = new ToolStripMenuItem()
+                    {
+                        Text = "Logging",
+                        CheckOnClick = true,
+                        Checked = false,
+                    };
+                    subMenu.Click += this.OnSetLoggingClicked;
+                    menuItem.DropDownItems.Add(subMenu);
+
+                    subMenu = new ToolStripMenuItem()
+                    {
+                        Text = "Help",
+                    };
+                    subMenu.Click += this.OnHelpClicked;
+                    menuItem.DropDownItems.Add(subMenu);
                     break;
 
                 //case PluginMenuType.Group:
@@ -124,6 +145,27 @@ namespace Disambiguator
             return menuItem;
         }
 
+        private void OnSetLoggingClicked(object sender, EventArgs e)
+        {
+            var menuItem = sender as ToolStripMenuItem;
+            _loggingOn = menuItem.Checked;
+
+            if (_loggingOn)
+            {
+                MessageBox.Show("Disambiguator Logging is now enabled\r\n\r\n" +
+                    "With logging on, a Disambiguator.log file will be written to\r\n" +
+                    "the current user's Desktop.\r\n\r\n" +
+                    "It is recommended to only turn on logging when asked to by\r\n" +
+                    "The Disambiguator development team."
+                    , "The Disambiguator", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void OnHelpClicked(object sender, EventArgs e)
+        {
+            new DisambiguatorHelp().ShowDialog();
+        }
+
 
         private void OnSetReportClicked(object sender, EventArgs e)
         {
@@ -137,13 +179,13 @@ namespace Disambiguator
                     "evaluate the target application and display a report of the\r\n" +
                     "executable name and various control details you can use\r\n" +
                     "to pinpoint the specific autotype sequence to use."
-                    , "The Disambiguator");
+                    , "The Disambiguator", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
             else
             {
                 MessageBox.Show("Disambiguator Reporting is now disabled\r\n\r\n" +
                     "Standard autotype functionality will now resume."
-                    , "The Disambiguator");
+                    , "The Disambiguator", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -179,19 +221,26 @@ namespace Disambiguator
         /// <param name="e"></param>
         private void AutoType_SequenceQueriesBegin(object sender, SequenceQueriesEventArgs e)
         {
-            Debug("Sequence Queries Begin");
+            try
+            {
+                Debug("Sequence Queries Begin");
 
-            _exePath = getExecutableFromHwnd(e.TargetWindowHandle).ToLower();
-            _exeFile = Path.GetFileName(_exePath);
-            _report = _reportOn;
-            _matchCount = 0;
+                _exePath = getExecutableFromHwnd(e.TargetWindowHandle).ToLower();
+                _exeFile = Path.GetFileName(_exePath);
+                _report = _reportOn;
+                _matchCount = 0;
 
-            //traverse the control tree for the target window to collect
-            //a list of UIelements that we can use to disambiguate
-            _currentUIElements = TraverseControlTree(e.TargetWindowHandle);
+                //traverse the control tree for the target window to collect
+                //a list of UIelements that we can use to disambiguate
+                _currentUIElements = TraverseControlTree(e.TargetWindowHandle);
 
-            //once the target app is analyzed, show any report window (if applicable)
-            TestOutput.ShowOnTop();
+                //once the target app is analyzed, show any report window (if applicable)
+                TestOutput.ShowOnTop();
+            }
+            catch (Exception ex)
+            {
+                Debug("Error In AutoType_SequenceQueriesBegin: " + ex.ToString());
+            }
         }
 
 
@@ -274,28 +323,49 @@ namespace Disambiguator
         /// <param name="e"></param>
         private void AutoType_SequenceQuery(object sender, SequenceQueryEventArgs e)
         {
-            //if reporting is on, we don't actually try to match anything
-            if (_report) return;
-
-            //main win title and AutoType sequence for this entry
-            //we have to check this separately from the custom associations
-            var autoTypeSequenceTitle = e.Entry.Strings.ReadSafe("Title");
-            string entryAutoTypeSequence = e.Entry.GetAutoTypeSequence();
-
-            Debug("ResolveSequence for AutoType Sequence Title");
-            ResolveSequence(autoTypeSequenceTitle, entryAutoTypeSequence, e);
-
-            //run through the target window associations looking for match elements
-            foreach (AutoTypeAssociation association in e.Entry.AutoType.Associations)
+            try
             {
-                //get the window name (this would usually contain the TITLE of the window
-                //that would match
-                var winName = association.WindowName;
-                Debug("ResolveSequence for AutoType Association Name");
-                ResolveSequence(winName, association.Sequence, e);
-            }
+                //if reporting is on, we don't actually try to match anything
+                if (_report) return;
 
-            Debug("Finished AutoType_SequenceQuery");
+                //main win title and AutoType sequence for this entry
+                //we have to check this separately from the custom associations
+                var autoTypeSequenceTitle = e.Entry.Strings.ReadSafe("Title");
+                string entryAutoTypeSequence = e.Entry.GetAutoTypeSequence();
+
+                try
+                {
+                    Debug("ResolveSequence for AutoType Sequence Title");
+                    ResolveSequence(autoTypeSequenceTitle, entryAutoTypeSequence, e);
+                }
+                catch (Exception ex)
+                {
+                    Debug("Error In AutoType_SequenceQuery.Resolving Title: " + ex.ToString());
+                }
+
+                //run through the target window associations looking for match elements
+                foreach (AutoTypeAssociation association in e.Entry.AutoType.Associations)
+                {
+                    //get the window name (this would usually contain the TITLE of the window
+                    //that would match
+                    try
+                    { 
+                    var winName = association.WindowName;
+                    Debug("ResolveSequence for AutoType Association Name");
+                    ResolveSequence(winName, association.Sequence, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug("Error In AutoType_SequenceQuery.Resolving AutoType Associations: " + ex.ToString());
+                    }
+                }
+
+                Debug("Finished AutoType_SequenceQuery");
+            }
+            catch (Exception ex)
+            {
+                Debug("Error In AutoType_SequenceQuery: " + ex.ToString());
+            }
         }
 
 
@@ -581,6 +651,7 @@ namespace Disambiguator
 
         internal static void Debug(string template, params object[] args)
         {
+            if (!_loggingOn) return;
             try
             {
                 var buf = string.Format(template, args);

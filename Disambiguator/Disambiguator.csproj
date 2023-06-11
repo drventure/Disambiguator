@@ -86,6 +86,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DisambiguatorHelp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DisambiguatorHelp.Designer.cs">
+      <DependentUpon>DisambiguatorHelp.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -98,6 +104,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="DisambiguatorHelp.resx">
+      <DependentUpon>DisambiguatorHelp.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -107,6 +116,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="DisambiguatorHelp.rtf" />
     <None Include="KeePass.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
