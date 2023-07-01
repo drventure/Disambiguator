@@ -31,6 +31,10 @@ using System.Net.NetworkInformation;
 namespace Disambiguator
 {
     /// <summary>
+    /// Main Disambiguator plugin
+    /// 
+    /// NOTE: do NOT use string interpolation anywhere, use string.Format()
+    /// PLGX format won't work with string interpolation
     /// 
     /// </summary>
     public sealed class DisambiguatorExt : Plugin
@@ -43,15 +47,22 @@ namespace Disambiguator
         private bool _reportOn = false;
 
         /// <summary>
+        /// is reporting on for this invocation
+        /// In other words, reporting MIGHT have been turned on by the {REPORT} tag
+        /// </summary>
+        private bool _report = false;
+
+        /// <summary>
         /// used to turn logging on or off dynamically
         /// </summary>
         private static bool _loggingOn = false;
 
         /// <summary>
-        /// is reporting on for this invocation
+        /// used to control the depth of control tree traversal.
+        /// Anything more than 2 or 3 is not recommended.
         /// </summary>
-        private bool _report = false;
-        
+        private static int _depth = 3;
+
         private string _exePath = null;
         private string _exeFile = null;
         private int _matchCount = 0;
@@ -231,8 +242,8 @@ namespace Disambiguator
                 _matchCount = 0;
 
                 //traverse the control tree for the target window to collect
-                //a list of UIelements that we can use to disambiguate
-                _currentUIElements = TraverseControlTree(e.TargetWindowHandle);
+                //a list of UIElements that we can use to disambiguate
+                _currentUIElements = TraverseControlTree(e.TargetWindowHandle, _depth);
 
                 //once the target app is analyzed, show any report window (if applicable)
                 TestOutput.ShowOnTop();
@@ -247,11 +258,13 @@ namespace Disambiguator
         /// <summary>
         /// Traverse the control tree from the parent element and build of a list of control elements to be tested
         /// Do this only once per invocation because it could be expensive
+        /// This version traverses the ENTIRE control tree from the given window on down.
+        /// Depending on depth, this could take significant time
         /// </summary>
         /// <param name="parent"></param>
         /// <param name="ctlParam"></param>
         /// <returns></returns>
-        private List<UIElement> TraverseControlTree(IntPtr targetWindowHandle)
+        private List<UIElement> TraverseControlTree(IntPtr targetWindowHandle, int depth)
         {
             Debug("Traversing Control Tree...");
             var uiElements = new List<UIElement>();
@@ -267,18 +280,56 @@ namespace Disambiguator
 
                 if (uiaObject != null)
                 {
-                    var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
-                    ReportWrite("   Parent ID: {0}", parentID);
+                    //add the root control element to the list
+                    var uiElement = new UIElement()
+                    {
+                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
+                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
+                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
+                    };
+                    uiElements.Add(uiElement);
+                    var indent = "   ";
+                    ReportWrite("{0}WindowID: {1}", indent, uiElement.ID);
+                    ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
+                    ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
 
-                    //use an always true OR condition
-                    //probably a better way to do this, but this'll work for now.
-                    //var condition = new OrCondition(
-                    //	new PropertyCondition(AutomationElement.IsEnabledProperty, true),
-                    //	new PropertyCondition(AutomationElement.IsEnabledProperty, false)
-                    //);
+                    //Doesn't appear to be of much value
+                    //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
+                    //ReportWrite("{0}ParentID: {0}", parentID);
 
-                    // Find all children of this parent
-                    AutomationElementCollection elementCollection = uiaObject.FindAll(TreeScope.Subtree, Condition.TrueCondition);
+                    //add children down to requested depth
+                    uiElements.AddRange(TraverseControlChildren(uiaObject, depth, indent));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug("Error while traversing Target App: " + ex.ToString());
+                MessageBox.Show("An error was encountered:\r\n" + ex.ToString());
+            }
+            return uiElements;
+        }
+
+
+        /// <summary>
+        /// Traverse the given controls  children, recursively down to the given depth
+        /// NOTE: depth of -1 means traverse the entire tree. Not recommended.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="ctlParam"></param>
+        /// <returns></returns>
+        private List<UIElement> TraverseControlChildren(AutomationElement uiaObject, int depth, string indent)
+        {
+            var uiElements = new List<UIElement>();
+
+            //once we've drilled down to the required depth, don't go any further
+            depth--;
+            if (depth == 0) return uiElements;
+            indent = indent + "   ";
+
+            try
+            {
+                // Find all children of this element
+                AutomationElementCollection elementCollection = uiaObject.FindAll(TreeScope.Children, Condition.TrueCondition);
                     foreach (AutomationElement child in elementCollection)
                     {
                         var uiElement = new UIElement()
@@ -288,10 +339,11 @@ namespace Disambiguator
                             Class = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
                         };
                         uiElements.Add(uiElement);
-                        ReportWrite("   Child ID: {0}", uiElement.ID);
-                        ReportWrite("      Name : {0}", uiElement.Name);
-                        ReportWrite("      Class: {0}", uiElement.Class);
-                    }
+                    ReportWrite("{0}Child ID: {1}", indent, uiElement.ID);
+                    ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
+                    ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
+
+                    uiElements.AddRange(TraverseControlChildren(child, depth, indent));
                 }
             }
             catch (Exception ex)
@@ -310,7 +362,14 @@ namespace Disambiguator
         /// <param name="e"></param>
         private void AutoType_SequenceQueriesEnd(object sender, SequenceQueriesEventArgs e)
         {
-            Debug("Sequence Queries End. {0} Matched Sequences", _matchCount);
+            if (_report)
+            {
+                Debug("Sequence Queries End. Reporting has been turned on. Matching disabled.");
+            }
+            else
+            {
+                Debug("Sequence Queries End. {0} Matched Sequences", _matchCount);
+            }
             _currentUIElements = null;
         }
 
@@ -349,7 +408,7 @@ namespace Disambiguator
                     //get the window name (this would usually contain the TITLE of the window
                     //that would match
                     try
-                    { 
+                    {
                     var winName = association.WindowName;
                     Debug("ResolveSequence for AutoType Association Name");
                     ResolveSequence(winName, association.Sequence, e);
@@ -394,7 +453,7 @@ namespace Disambiguator
 
             exeParam = getParam(ref matchTemplate, "exe");
             ctlParam = getParam(ref matchTemplate, "ctl");
- 
+
             if (!string.IsNullOrEmpty(exeParam))
             {
                 Debug("Searching for EXE tag \"{0}\"", exeParam);
@@ -658,7 +717,7 @@ namespace Disambiguator
                 File.AppendAllText(LogFile, string.Format("{0} {1}\r\n", DateTime.Now, buf));
                 //System.Diagnostics.Debug.WriteLine(string.Format("Disambiguator: {0}", buf));
             }
-            catch 
+            catch
             {
             }
         }
@@ -677,9 +736,10 @@ namespace Disambiguator
         /// <param name="args"></param>
         private void ReportWrite(string template, params object[] args)
         {
+            if (!string.IsNullOrEmpty(template)) Debug("REPORT: " + template, args);
+
             if (_report)
             {
-                if (!string.IsNullOrEmpty(template)) Debug("REPORT: " + template, args);
                 TestOutput.WriteLine(template, args);
             }
         }

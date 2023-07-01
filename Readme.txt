@@ -167,6 +167,13 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.3.0
+Changed from depth first to breath first control search. Should make resolving windows and 
+controls much faster, esp for very complex windows.
+
+v1.0.2.0
+Added menus for turning on Report mode and logging, plus some simple help.
+
 v1.0.0.0
 Official first release version.
 

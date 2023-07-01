@@ -35,6 +35,8 @@ namespace Disambiguator
             this.rtfHelp.LoadFile(stream, RichTextBoxStreamType.RichText);
             this.rtfHelp.ReadOnly = true;
             this.rtfHelp.LinkClicked += RtfHelp_LinkClicked;
+
+            this.Text = this.Text + " v" + Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
 

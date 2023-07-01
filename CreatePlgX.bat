@@ -33,7 +33,7 @@ for /F "delims=. tokens=1,2,3,4" %%J in ("%version%") do (set major=%%J&set mino
     @echo|set /p= The Disambiguator:%major%.%minor%.%patch%
         if not %build%==0 (@echo .%build%) ELSE (@echo.)
     @echo|set /p= :
-)>"%versionfile%"
+)>"VERSION."
 
 echo Deleting existing PlgX folder
 if exist Plgx rmdir /s /q PlgX
