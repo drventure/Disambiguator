@@ -124,7 +124,15 @@ namespace Disambiguator
 
         internal static void WriteLine(string template, params object[] args)
         {
-            var buf = string.Format(template, args);
+            var buf = template;
+            if (args != null && args.Length > 0)
+            {
+                try
+                {
+                    buf = string.Format(buf, args);
+                }
+                catch { }
+            }
             WriteLine(buf); 
         }
 
@@ -157,10 +165,12 @@ namespace Disambiguator
             {
                 _window.InvokeIfRequired(o =>
                 {
-                    _window.Show();
-                    _window.BringToFront();
                     _window.tbxOutput.SelectionStart = _window.tbxOutput.Text.Length;
                     _window.tbxOutput.ScrollToCaret();
+                    _window.WindowState = FormWindowState.Minimized;
+                    _window.Show();
+                    _window.WindowState = FormWindowState.Normal;
+                    _window.BringToFront();
                 });
             }
         }

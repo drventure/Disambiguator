@@ -330,15 +330,15 @@ namespace Disambiguator
             {
                 // Find all children of this element
                 AutomationElementCollection elementCollection = uiaObject.FindAll(TreeScope.Children, Condition.TrueCondition);
-                    foreach (AutomationElement child in elementCollection)
+                foreach (AutomationElement child in elementCollection)
+                {
+                    var uiElement = new UIElement()
                     {
-                        var uiElement = new UIElement()
-                        {
-                            ID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
-                            Name = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
-                            Class = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
-                        };
-                        uiElements.Add(uiElement);
+                        ID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
+                        Name = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
+                        Class = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
+                    };
+                    uiElements.Add(uiElement);
                     ReportWrite("{0}Child ID: {1}", indent, uiElement.ID);
                     ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
                     ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
@@ -364,12 +364,13 @@ namespace Disambiguator
         {
             if (_report)
             {
-                Debug("Sequence Queries End. Reporting has been turned on. Matching disabled.");
+                Debug("Sequence Queries Ended with {0} Matched Sequences. Reporting has been turned on, so actual matching is disabled. ", _matchCount);
             }
             else
             {
-                Debug("Sequence Queries End. {0} Matched Sequences", _matchCount);
+                Debug("Sequence Queries Ended with {0} Matched Sequences", _matchCount);
             }
+            //free the memory
             _currentUIElements = null;
         }
 
@@ -394,12 +395,11 @@ namespace Disambiguator
 
                 try
                 {
-                    Debug("ResolveSequence for AutoType Sequence Title");
-                    ResolveSequence(autoTypeSequenceTitle, entryAutoTypeSequence, e);
+                    MatchSequence(autoTypeSequenceTitle, entryAutoTypeSequence, e);
                 }
                 catch (Exception ex)
                 {
-                    Debug("Error In AutoType_SequenceQuery.Resolving Title: " + ex.ToString());
+                    Debug("Error In AutoType_SequenceQuery matching title. Error: {0}", ex);
                 }
 
                 //run through the target window associations looking for match elements
@@ -409,13 +409,12 @@ namespace Disambiguator
                     //that would match
                     try
                     {
-                    var winName = association.WindowName;
-                    Debug("ResolveSequence for AutoType Association Name");
-                    ResolveSequence(winName, association.Sequence, e);
+                        var winName = association.WindowName;
+                        MatchSequence(winName, association.Sequence, e);
                     }
                     catch (Exception ex)
                     {
-                        Debug("Error In AutoType_SequenceQuery.Resolving AutoType Associations: " + ex.ToString());
+                        Debug("Error In AutoType_SequenceQuery matching AutoType Association, Error: {0}", ex);
                     }
                 }
 
@@ -423,44 +422,61 @@ namespace Disambiguator
             }
             catch (Exception ex)
             {
-                Debug("Error In AutoType_SequenceQuery: " + ex.ToString());
+                Debug("Error In AutoType_SequenceQuery: {0}", ex);
             }
         }
 
 
-        public void ResolveSequence(string winName, string sequence, SequenceQueryEventArgs e)
+        /// <summary>
+        /// Given a windowName and a sequence, determine whether there's match and if so
+        /// add it to the list of matches
+        /// </summary>
+        /// <param name="winName"></param>
+        /// <param name="sequence"></param>
+        /// <param name="e"></param>
+        public void MatchSequence(string winName, string sequence, SequenceQueryEventArgs e)
         {
             //clear all parameters and flags
             string exeParam = string.Empty;
             string ctlParam = string.Empty;
             var match = false;
 
+            Debug("MatchSequence winName='{0}'  sequence='{1}'  eventId='{2}'  TargetTitle='{3}'  TargetHandle='{4}'", winName, sequence, e.EventID, e.TargetWindowTitle, e.TargetWindowHandle);
+
             //get the window name (this would usually contain the TITLE of the window
             //that would match
-            if (winName == null)
+            if (string.IsNullOrWhiteSpace(winName))
             {
-                Debug("Empty WindowName detected");
+                Debug("   winName should not be empty. Skipping...");
                 return;
             }
-
-            Debug("ResolveSequence winName={0}  sequence={1}  eventId={2}  TargetTitle={3}  TargetHandle={4}", winName, sequence, e.EventID, e.TargetWindowTitle, e.TargetWindowHandle);
-
-            //next remove any app out of the window name
-            //and try it
 
             //first compile the window name to replace all KeePass elements
             var matchTemplate = SprEngine.Compile(winName, new SprContext(e.Entry, e.Database, SprCompileFlags.All));
 
+            //pull out any exe or ctl parameters
             exeParam = getParam(ref matchTemplate, "exe");
             ctlParam = getParam(ref matchTemplate, "ctl");
 
+            //First, the winName must match to be considered
+            var title = e.TargetWindowTitle ?? string.Empty;
+            match = IsAMatch(title, matchTemplate);
+            if (!match)
+            {
+                Debug("   Window Title '{0}' did not match", title);
+                return;
+            }
+
+            //now check if any exeParam matches
+            match = false;
             if (!string.IsNullOrEmpty(exeParam))
             {
-                Debug("Searching for EXE tag \"{0}\"", exeParam);
+                Debug("   Searching for EXE tag '{0}'", exeParam);
                 if (exeParam.Contains(@"\"))
                 {
                     //parameter looks like it's got a path element, so compare to the whole exeName
                     match = (IsAMatch(_exePath, exeParam));
+                    if (!match) Debug("   Executable path '{0}' did not match '{1}'", _exePath, exeParam);
                 }
                 else
                 {
@@ -472,31 +488,35 @@ namespace Disambiguator
                         exeParam += ".exe";
                     }
                     match = (IsAMatch(_exeFile, exeParam));
+                    if (!match) Debug("   Executable path '{0}' did not match '{1}'", _exePath, exeParam);
                 }
             }
 
-            //Always enumerate child controls when reporting
+            //no EXE match, so check for any child control matches
             if (!match && !string.IsNullOrEmpty(ctlParam))
             {
-                Debug("Searching for CTL tag \"{0}\"", ctlParam);
-                //no match yet, check for any child controls
-                Debug("Scanning Descendant Controls...");
-                match = ScanControlTree(_currentUIElements, ctlParam);
+                match = MatchOnControlTree(_currentUIElements, ctlParam);
             }
 
-            //Lastly, the winName must match as well to be considered
-            var title = e.TargetWindowTitle ?? string.Empty;
-            var titleMatch = IsAMatch(title, matchTemplate);
-            Debug("Checking for Window Title Match, title={0}, match={1}", title, titleMatch);
-            match = match && titleMatch;
-
             //if reporting is on we DO NOT want to match
-            //NOTE that other entries with reporting OFF +may still match+
+            //!!!!NOTE!!!! Other keePass key entries +may still match+ if reporting is ON and could thus perform autotype!
             if (match)
             {
-                Debug("Adding Sequence to found list");
-                e.AddSequence(string.IsNullOrEmpty(sequence) ? e.Entry.GetAutoTypeSequence() : sequence);
-                _matchCount++;
+                Debug("   Sequence matched.");
+                if (!_report)
+                {
+                    Debug("   Adding Sequence to found list");
+                    e.AddSequence(string.IsNullOrEmpty(sequence) ? e.Entry.GetAutoTypeSequence() : sequence);
+                    _matchCount++;
+                }
+                else
+                {
+                    Debug("   Reporting on, so actual matching is disabled.");
+                }
+            }
+            else
+            {
+                Debug("   Sequence did not match.");
             }
         }
 
@@ -507,27 +527,19 @@ namespace Disambiguator
         /// </summary>
         /// <param name="uiElements"></param>
         /// <param name="ctlParam"></param>
-        /// <returns></returns>
-        private bool ScanControlTree(List<UIElement> uiElements, string ctlParam)
+        /// <returns>true if a match is detected</returns>
+        private bool MatchOnControlTree(List<UIElement> uiElements, string ctlParam)
         {
-            Debug("Testing Target UI Elements using ctlParam {0}", ctlParam);
+            Debug("   Scanning control tree using ctlParam '{0}'", ctlParam);
 
             var matches = uiElements.Where(u => IsAMatch(u.ID, ctlParam) || IsAMatch(u.Name, ctlParam) || IsAMatch(u.Class, ctlParam)).ToList();
             if (matches.Any())
             {
-                Debug("!!!! MATCHED {0} ENTRIES !!!!", matches.Count);
-                matches.ForEach(m => Debug("  Matched on ID:{0} Name{1} Class{2}", m.ID, m.Name, m.Class));
-                if (!_report)
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                Debug("No Match Found");
+                matches.ForEach(m => Debug("      Matched on ID:'{0}' Name:'{1}'  Class:'{2}'", m.ID, m.Name, m.Class));
+                return true;
             }
 
-            Debug("ScanControlTree returning false");
+            Debug("      No Match Found");
             return false;
         }
 
@@ -605,27 +617,31 @@ namespace Disambiguator
             Regex objRegex = null;
             if (bRegex)
             {
+                //attempt to compile the regex
                 try
                 {
                     objRegex = new Regex(matchPattern.Substring(2, matchPattern.Length - 4), RegexOptions.IgnoreCase);
                 }
                 catch (Exception)
                 {
+                    //if it fails to compile, assume it's NOT a regex
                     bRegex = false;
                 }
             }
 
-            //if we've got a regex
             var match = false;
+            //if we've got a regex
             if (bRegex)
             {
-                //check it as a regex
+                //try to match as a regex
                 match = (objRegex.IsMatch(value));
+                Debug("   Matching '{0}' to '{1}' as regex resulted in {2}", value, matchPattern, match ? "!!!MATCH!!!" : "no match");
             }
             else
             {
                 //otherwise just use simple matching
                 match = StrUtil.SimplePatternMatch(matchPattern, value, StrUtil.CaseIgnoreCmp);
+                Debug("   Matching '{0}' to '{1}' as pattern resulted in {2}", value, matchPattern, match ? "!!!MATCH!!!" : "no match");
             }
 
             return match;
@@ -708,17 +724,29 @@ namespace Disambiguator
         }
 
 
+        /// <summary>
+        /// Simple logging function
+        /// </summary>
+        /// <param name="template"></param>
+        /// <param name="args"></param>
         internal static void Debug(string template, params object[] args)
         {
-            if (!_loggingOn) return;
-            try
+            if (_loggingOn)
             {
-                var buf = string.Format(template, args);
-                File.AppendAllText(LogFile, string.Format("{0} {1}\r\n", DateTime.Now, buf));
-                //System.Diagnostics.Debug.WriteLine(string.Format("Disambiguator: {0}", buf));
-            }
-            catch
-            {
+                try
+                {
+                    var buf = template;
+                    if (args != null && args.Length > 0)
+                    {
+                        try
+                        {
+                            buf = string.Format(buf, args);
+                        }
+                        catch { }
+                    }
+                    File.AppendAllText(LogFile, string.Format("{0} {1}\r\n", DateTime.Now, buf));
+                }
+                catch { }
             }
         }
 
