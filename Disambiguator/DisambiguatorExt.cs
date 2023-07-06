@@ -362,14 +362,13 @@ namespace Disambiguator
         /// <param name="e"></param>
         private void AutoType_SequenceQueriesEnd(object sender, SequenceQueriesEventArgs e)
         {
+            var msg = string.Format("Sequence Queries Ended with {0} Matched Sequence{1}. ", _matchCount, _matchCount > 1 ? "s" : "");
             if (_report)
             {
-                Debug("Sequence Queries Ended with {0} Matched Sequences. Reporting has been turned on, so actual matching is disabled. ", _matchCount);
+                msg = msg + "Reporting has been turned on, so actual matching is disabled. ";
             }
-            else
-            {
-                Debug("Sequence Queries Ended with {0} Matched Sequences", _matchCount);
-            }
+            Debug(msg);
+
             //free the memory
             _currentUIElements = null;
         }
@@ -468,7 +467,6 @@ namespace Disambiguator
             }
 
             //now check if any exeParam matches
-            match = false;
             if (!string.IsNullOrEmpty(exeParam))
             {
                 Debug("   Searching for EXE tag '{0}'", exeParam);
