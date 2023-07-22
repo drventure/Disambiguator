@@ -167,12 +167,24 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.4.0
+Very minor release to improve one of the logging messages. 
+
 v1.0.3.0
-Changed from depth first to breath first control search. Should make resolving windows and 
-controls much faster, esp for very complex windows.
+Limits the depth of control tree traversal to 3 levels, which should significantly improve performance during autotype in certain target applications.
+Improved formatting of logging and report.
 
 v1.0.2.0
-Added menus for turning on Report mode and logging, plus some simple help.
+Improved performance by only traversing the Target app control tree once.
+Caching precompiled Regexs if used.
+Added simple help page and menu access
+Added menu for turning on/off logging
+Added menu for turning on/off reporting (no need to use the {report} tag anymore)
+Improved error handling during sequence processing.
+Improved the packaging of released (still a work in progress)
+
+v1.0.1.0
+Minor changes to the {report} tag, so that during reporting, dependent controls are always scanned.
 
 v1.0.0.0
 Official first release version.
