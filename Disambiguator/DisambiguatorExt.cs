@@ -467,6 +467,8 @@ namespace Disambiguator
             }
 
             //now check if any exeParam matches
+            //reset match
+            match = false;
             if (!string.IsNullOrEmpty(exeParam))
             {
                 Debug("   Searching for EXE tag '{0}'", exeParam);

@@ -167,6 +167,9 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.5.0
+Corrected problem with CTL tag matching.
+
 v1.0.4.0
 Very minor release to improve one of the logging messages. 
 
