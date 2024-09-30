@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("drventure")]
 [assembly: AssemblyProduct("KeePass Plugin")]
-[assembly: AssemblyCopyright("Copyright © 2023 drventure")]
+[assembly: AssemblyCopyright("Copyright © 2023-2024 drventure")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -18,6 +18,6 @@ using System.Runtime.InteropServices;
 [assembly: Guid("28241D0D-62D3-43A9-9355-B4016AA2F91E")]
 
 // Assembly version information
-[assembly: AssemblyVersion("1.0.5.0")]
+[assembly: AssemblyVersion("1.0.6.0")]
 
-[assembly: AssemblyFileVersion("1.0.5.0")]
+[assembly: AssemblyFileVersion("1.0.6.0")]

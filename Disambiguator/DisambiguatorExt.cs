@@ -93,7 +93,7 @@ namespace Disambiguator
 
 
         /// <summary>
-        /// Provide our menu item to Keepass
+        /// Provide our menu item to KeePass
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
@@ -281,11 +281,45 @@ namespace Disambiguator
                 if (uiaObject != null)
                 {
                     //add the root control element to the list
+                    string ID = string.Empty;
+                    string Name = ID;
+                    string Class = ID;
+
+                    //attempt each of these resolutions, but if they fail, just ignore
+                    var msg = "!Failed to resolve!";
+                    try 
+                    { 
+                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string; 
+                    } 
+                    catch (Exception ex) 
+                    {
+                        Debug("Unable to resolve AutomationID: " + ex.ToString());
+                        ID = msg; 
+                    };
+                    try 
+                    {
+                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string; 
+                    } 
+                    catch (Exception ex)
+                    {
+                        Debug("Unable to resolve Name: " + ex.ToString());
+                        Name = msg; 
+                    };
+                    try 
+                    { 
+                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string; 
+                    } 
+                    catch (Exception ex) 
+                    {
+                        Debug("Unable to resolve ClassName: " + ex.ToString());
+                        Class = msg; 
+                    };
+
                     var uiElement = new UIElement()
                     {
-                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
-                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
-                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
+                        ID = ID,
+                        Name = Name,
+                        Class = Class,
                     };
                     uiElements.Add(uiElement);
                     var indent = "   ";
@@ -545,7 +579,7 @@ namespace Disambiguator
 
 
         /// <summary>
-        /// used to cache and precompute regexes
+        /// used to cache and precompute regex's
         /// </summary>
         private static Dictionary<string, Regex> _regexes = new Dictionary<string, Regex>();
 
@@ -699,7 +733,7 @@ namespace Disambiguator
         /// </summary>
         public override void Terminate()
         {
-            Debug("Keepass terminating");
+            Debug("KeePass terminating");
 
             AutoType.SequenceQuery -= AutoType_SequenceQuery;
             AutoType.SequenceQueriesBegin -= AutoType_SequenceQueriesBegin;
