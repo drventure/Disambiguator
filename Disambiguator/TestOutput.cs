@@ -192,7 +192,7 @@ namespace Disambiguator
         {
             try
             {
-                Clipboard.SetText(tbxOutput.Text);
+                tbxOutput.Copy();
                 System.Media.SystemSounds.Beep.Play();
             }
             catch 

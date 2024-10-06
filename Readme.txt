@@ -173,6 +173,14 @@ Even if the ID, Class, or Name can't be determined, if the other elements can, t
 use the control for disambiguation.
 
 --------
+v1.0.7.0
+The Copy to Clipboard button on the Log Report window in some cases would sound an error sound
+and fail to copy the content of the report to the clipboard.
+
+v1.0.6.0
+Corrected issue with MSAA properties not being available in some cases, causes The Disambiguator to display an error
+instead of just continuing on and using whatever properties +were+ available.
+
 v1.0.5.0
 Corrected problem with CTL tag matching.
 
