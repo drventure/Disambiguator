@@ -192,6 +192,7 @@ namespace Disambiguator
         {
             try
             {
+                tbxOutput.SelectAll();
                 tbxOutput.Copy();
                 System.Media.SystemSounds.Beep.Play();
             }

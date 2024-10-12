@@ -167,12 +167,9 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
-v1.0.6.0
-Improved handling of failures when attempting to resolve control details via the MSAA layer.
-Even if the ID, Class, or Name can't be determined, if the other elements can, then we can still
-use the control for disambiguation.
+v1.0.8.0
+Final fix for the Copy to Clipboard button not actually copying.
 
---------
 v1.0.7.0
 The Copy to Clipboard button on the Log Report window in some cases would sound an error sound
 and fail to copy the content of the report to the clipboard.
