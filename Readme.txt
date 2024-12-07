@@ -167,6 +167,11 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.9.0
+Resolved issue where you might occasionally get an error message about 
+Null Pointer in TraverseControlTree. Thanks to 4-FLOSS-Free-Libre-Open-Source-Software for the
+heads up on this one.
+
 v1.0.8.0
 Final fix for the Copy to Clipboard button not actually copying.
 

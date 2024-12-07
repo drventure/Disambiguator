@@ -269,6 +269,10 @@ namespace Disambiguator
             Debug("Traversing Control Tree...");
             var uiElements = new List<UIElement>();
 
+            //guard condition, not target handle means nothing we can do
+            //so just return an empty element list
+            if (targetWindowHandle.Equals(IntPtr.Zero)) return uiElements;
+
             try
             {
                 ReportWrite("   Application of current target window: \"{0}\"", _exePath);
@@ -287,32 +291,32 @@ namespace Disambiguator
 
                     //attempt each of these resolutions, but if they fail, just ignore
                     var msg = "!Failed to resolve!";
-                    try 
-                    { 
-                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string; 
-                    } 
-                    catch (Exception ex) 
+                    try
+                    {
+                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+                    }
+                    catch (Exception ex)
                     {
                         Debug("Unable to resolve AutomationID: " + ex.ToString());
-                        ID = msg; 
+                        ID = msg;
                     };
-                    try 
+                    try
                     {
-                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string; 
-                    } 
+                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                    }
                     catch (Exception ex)
                     {
                         Debug("Unable to resolve Name: " + ex.ToString());
-                        Name = msg; 
+                        Name = msg;
                     };
-                    try 
-                    { 
-                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string; 
-                    } 
-                    catch (Exception ex) 
+                    try
+                    {
+                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
+                    }
+                    catch (Exception ex)
                     {
                         Debug("Unable to resolve ClassName: " + ex.ToString());
-                        Class = msg; 
+                        Class = msg;
                     };
 
                     var uiElement = new UIElement()
