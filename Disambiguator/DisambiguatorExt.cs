@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Text;
 using System.Runtime.ConstrainedExecution;
 using System.Security;
-
 using System.Windows.Automation;
 
 using KeePass;
@@ -25,7 +22,6 @@ using KeePassLib.Utility;
 using KeePassLib;
 using KeePassLib.Security;
 using KeePassLib.Cryptography.PasswordGenerator;
-using System.Net.NetworkInformation;
 
 
 namespace Disambiguator
@@ -284,52 +280,10 @@ namespace Disambiguator
 
                 if (uiaObject != null)
                 {
-                    //add the root control element to the list
-                    string ID = string.Empty;
-                    string Name = ID;
-                    string Class = ID;
-
-                    //attempt each of these resolutions, but if they fail, just ignore
-                    var msg = "!Failed to resolve!";
-                    try
-                    {
-                        ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug("Unable to resolve AutomationID: " + ex.ToString());
-                        ID = msg;
-                    };
-                    try
-                    {
-                        Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug("Unable to resolve Name: " + ex.ToString());
-                        Name = msg;
-                    };
-                    try
-                    {
-                        Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug("Unable to resolve ClassName: " + ex.ToString());
-                        Class = msg;
-                    };
-
-                    var uiElement = new UIElement()
-                    {
-                        ID = ID,
-                        Name = Name,
-                        Class = Class,
-                    };
+                    var uiElement = UIElementFromAutomationElement(uiaObject);
                     uiElements.Add(uiElement);
                     var indent = "   ";
-                    ReportWrite("{0}WindowID: {1}", indent, uiElement.ID);
-                    ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
-                    ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
+                    ReportWrite(indent, uiElement);
 
                     //Doesn't appear to be of much value
                     //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
@@ -370,17 +324,10 @@ namespace Disambiguator
                 AutomationElementCollection elementCollection = uiaObject.FindAll(TreeScope.Children, Condition.TrueCondition);
                 foreach (AutomationElement child in elementCollection)
                 {
-                    var uiElement = new UIElement()
-                    {
-                        ID = child.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string,
-                        Name = child.GetCurrentPropertyValue(AutomationElement.NameProperty) as string,
-                        Class = child.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string,
-                    };
+                    var uiElement = UIElementFromAutomationElement(child);
                     uiElements.Add(uiElement);
-                    ReportWrite("{0}Child ID: {1}", indent, uiElement.ID);
-                    ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
-                    ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
-
+                    ReportWrite(indent, uiElement);
+                    
                     uiElements.AddRange(TraverseControlChildren(child, depth, indent));
                 }
             }
@@ -392,6 +339,107 @@ namespace Disambiguator
             return uiElements;
         }
 
+
+        private UIElement UIElementFromAutomationElement(AutomationElement uiaObject)
+        {
+            //add the root control element to the list
+            string ID = string.Empty;
+            string Name = ID;
+            string Class = ID;
+            string TheControlType = string.Empty;
+            string Text = string.Empty;
+            Rectangle Bounds = new Rectangle();
+
+            //attempt each of these resolutions, but if they fail, just ignore
+            const string FAILED = "!Failed to resolve!";
+            var msg = FAILED;
+            try
+            {
+                ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+            }
+            catch (Exception ex)
+            {
+                Debug("Unable to resolve AutomationID: " + ex.ToString());
+                ID = msg;
+            };
+            try
+            {
+                Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+            }
+            catch (Exception ex)
+            {
+                Debug("Unable to resolve Name: " + ex.ToString());
+                Name = msg;
+            };
+            try
+            {
+                Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
+            }
+            catch (Exception ex)
+            {
+                Debug("Unable to resolve ClassName: " + ex.ToString());
+                Class = msg;
+            };
+            try
+            {
+                TheControlType = uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
+            }
+            catch (Exception ex)
+            {
+                Debug("Unable to resolve ControlType: " + ex.ToString());
+                TheControlType = msg;
+            };
+            try
+            {
+                object r = uiaObject.GetCurrentPropertyValue(AutomationElement.BoundingRectangleProperty);
+                if (!object.ReferenceEquals(r, null))
+                {
+                    // BoundingRectangleProperty returns a System.Windows.Rect from UIAutomationTypes
+                    // We need to use reflection to access its properties to avoid the dynamic type issue
+                    var rectType = r.GetType();
+                    var x = (double)rectType.GetProperty("X").GetValue(r, null);
+                    var y = (double)rectType.GetProperty("Y").GetValue(r, null);
+                    var width = (double)rectType.GetProperty("Width").GetValue(r, null);
+                    var height = (double)rectType.GetProperty("Height").GetValue(r, null);
+                    var isEmpty = (bool)rectType.GetProperty("IsEmpty").GetValue(r, null);
+                    
+                    if (!isEmpty)
+                    {
+                        Bounds = new Rectangle((int)x, (int)y, (int)width, (int)height);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug("Unable to resolve BoundingRectangle: " + ex.ToString());
+            };
+
+            //check to see if we may need to use Image2Text
+            if (!Bounds.IsEmpty && Class == "SamlEdgeBrowserHost")
+            {
+                //try image to text
+                try
+                {
+                    Text = new BoundsToText(Bounds).Convert();
+                }
+                catch (Exception ex)
+                {
+                    Debug("Failed to convert bounding rect to text: " + ex.ToString());
+                }
+            }
+
+            var uiElement = new UIElement()
+            {
+                ID = ID,
+                Name = Name,
+                Class = Class,
+                Text = Text,
+                Type = TheControlType,
+                Bounds = Bounds,
+            };
+
+            return uiElement;
+        }
 
         /// <summary>
         /// Event fired once when Autotype sequence processes is complete
@@ -570,10 +618,16 @@ namespace Disambiguator
         {
             Debug("   Scanning control tree using ctlParam '{0}'", ctlParam);
 
-            var matches = uiElements.Where(u => IsAMatch(u.ID, ctlParam) || IsAMatch(u.Name, ctlParam) || IsAMatch(u.Class, ctlParam)).ToList();
+            var matches = uiElements.Where(u => 
+                IsAMatch(u.ID, ctlParam) || 
+                IsAMatch(u.Name, ctlParam) ||
+                IsAMatch(u.Class, ctlParam) ||
+                IsAMatch(u.Type, ctlParam) ||
+                IsAMatch(u.Text, ctlParam) 
+                ).ToList();
             if (matches.Any())
             {
-                matches.ForEach(m => Debug("      Matched on ID:'{0}' Name:'{1}'  Class:'{2}'", m.ID, m.Name, m.Class));
+                matches.ForEach(m => Debug("      Matched on ID:'{0}' Name:'{1}'  Class:'{2}'  Type:'{3}'  Text: '{4}'", m.ID, m.Name, m.Class, m.Type, m.Text));
                 return true;
             }
 
@@ -809,6 +863,19 @@ namespace Disambiguator
                 TestOutput.WriteLine(template, args);
             }
         }
+
+        private void ReportWrite(string indent, UIElement uiElement)
+        {
+            if (_report && uiElement != null)
+            {
+                ReportWrite("{0}WindowID: {1}", indent, uiElement.ID);
+                ReportWrite("{0}  Bounds: {1},{2},{3},{4}", indent, uiElement.Bounds.X, uiElement.Bounds.Y, uiElement.Bounds.Width, uiElement.Bounds.Height);
+                ReportWrite("{0}  Name  : {1}", indent, uiElement.Name);
+                ReportWrite("{0}  Class : {1}", indent, uiElement.Class);
+                ReportWrite("{0}  Text  : {1}", indent, uiElement.Text);
+                ReportWrite("{0}  Type  : {1}", indent, uiElement.Type);
+            }
+        }
     }
 
 
@@ -817,5 +884,8 @@ namespace Disambiguator
         public string ID { get; set; }
         public string Name { get; set; }
         public string Class { get; set; }
+        public string Text { get; set; }
+        public string Type { get; set; }
+        public Rectangle Bounds { get; set; }
     }
 }

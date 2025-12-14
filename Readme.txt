@@ -167,6 +167,11 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 
 Changelog
 --------
+v1.0.10.0
+Added support for ImageToText searching of embedded Edge browser windows, specifically for 
+disambiguating Single Sign On windows that might display multiple prompts which have to be
+disambiguated.
+
 v1.0.9.0
 Resolved issue where you might occasionally get an error message about 
 Null Pointer in TraverseControlTree. Thanks to 4-FLOSS-Free-Libre-Open-Source-Software for the

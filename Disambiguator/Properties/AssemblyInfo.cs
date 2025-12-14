@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 // General assembly properties
 [assembly: AssemblyTitle("The Disambiguator")]
@@ -18,6 +19,9 @@ using System.Runtime.InteropServices;
 [assembly: Guid("28241D0D-62D3-43A9-9355-B4016AA2F91E")]
 
 // Assembly version information
-[assembly: AssemblyVersion("1.0.9.0")]
+[assembly: AssemblyVersion("1.0.10.0")]
 
-[assembly: AssemblyFileVersion("1.0.9.0")]
+[assembly: AssemblyFileVersion("1.0.10.0")]
+
+// Allow unit test project to access internal members
+[assembly: InternalsVisibleTo("UnitTests")]
