@@ -51,6 +51,9 @@ namespace Disambiguator
             //guard conditions
             if (_bounds.IsEmpty) { return string.Empty; }
 
+            // Ensure native Tesseract DLL is loaded from embedded resources
+            NativeDllLoader.EnsureTesseractLoaded();
+
             using (var api = OcrApi.Create())
             {
                 api.Init(Languages.English);

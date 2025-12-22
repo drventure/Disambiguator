@@ -79,6 +79,9 @@ namespace Disambiguator
 
             _keePassHost = host;
 
+            // Initialize native DLL loader for Tesseract
+            NativeDllLoader.Initialize();
+
             AutoType.SequenceQuery += AutoType_SequenceQuery;
             AutoType.SequenceQueriesBegin += AutoType_SequenceQueriesBegin;
             AutoType.SequenceQueriesEnd += AutoType_SequenceQueriesEnd;
@@ -273,25 +276,17 @@ namespace Disambiguator
             {
                 ReportWrite("   Application of current target window: \"{0}\"", _exePath);
 
-                //attempt to retrieve an accessible object from the target window handle
-                var uiaObject = AutomationElement.FromHandle(targetWindowHandle);
+                var uiElement = UIElementFromWindowHandle(targetWindowHandle);
+                uiElements.Add(uiElement);
+                var indent = "   ";
+                ReportWrite(indent, uiElement);
 
-                ReportWrite("   TargetWindow: {0} Resolved: {1}", targetWindowHandle, uiaObject != null);
+                //Doesn't appear to be of much value
+                //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
+                //ReportWrite("{0}ParentID: {0}", parentID);
 
-                if (uiaObject != null)
-                {
-                    var uiElement = UIElementFromAutomationElement(uiaObject);
-                    uiElements.Add(uiElement);
-                    var indent = "   ";
-                    ReportWrite(indent, uiElement);
-
-                    //Doesn't appear to be of much value
-                    //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
-                    //ReportWrite("{0}ParentID: {0}", parentID);
-
-                    //add children down to requested depth
-                    uiElements.AddRange(TraverseControlChildren(uiaObject, depth, indent));
-                }
+                //add children down to requested depth
+                uiElements.AddRange(TraverseControlChildren(uiElement.uiaObject, depth, indent));
             }
             catch (Exception ex)
             {
@@ -340,7 +335,37 @@ namespace Disambiguator
         }
 
 
+        private UIElement UIElementFromWindowHandle(IntPtr hWnd)
+        {
+            UIElement uiElement = null;
+            var uiaObject = AutomationElement.FromHandle(hWnd);
+            if (uiaObject == null) return uiElement;
+
+            uiElement = new UIElement()
+            {
+                hWnd = hWnd,
+                uiaObject = uiaObject,
+            };
+
+            return ResolveUIElement(uiElement);
+        }
+
+
         private UIElement UIElementFromAutomationElement(AutomationElement uiaObject)
+        {
+            UIElement uiElement = null;
+            if (uiaObject == null) return uiElement;
+            var hWnd = new IntPtr((int)uiaObject.GetCurrentPropertyValue(AutomationElement.NativeWindowHandleProperty));
+            uiElement = new UIElement()
+            {
+                hWnd = hWnd,
+                uiaObject = uiaObject,
+            };
+            return ResolveUIElement(uiElement);
+        }
+
+
+        private UIElement ResolveUIElement(UIElement uiElement)
         {
             //add the root control element to the list
             string ID = string.Empty;
@@ -355,7 +380,7 @@ namespace Disambiguator
             var msg = FAILED;
             try
             {
-                ID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+                ID = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
             }
             catch (Exception ex)
             {
@@ -364,7 +389,7 @@ namespace Disambiguator
             };
             try
             {
-                Name = uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                Name = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
             }
             catch (Exception ex)
             {
@@ -373,7 +398,7 @@ namespace Disambiguator
             };
             try
             {
-                Class = uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
+                Class = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
             }
             catch (Exception ex)
             {
@@ -382,7 +407,7 @@ namespace Disambiguator
             };
             try
             {
-                TheControlType = uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
+                TheControlType = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
             }
             catch (Exception ex)
             {
@@ -391,52 +416,32 @@ namespace Disambiguator
             };
             try
             {
-                object r = uiaObject.GetCurrentPropertyValue(AutomationElement.BoundingRectangleProperty);
-                if (!object.ReferenceEquals(r, null))
-                {
-                    // BoundingRectangleProperty returns a System.Windows.Rect from UIAutomationTypes
-                    // We need to use reflection to access its properties to avoid the dynamic type issue
-                    var rectType = r.GetType();
-                    var x = (double)rectType.GetProperty("X").GetValue(r, null);
-                    var y = (double)rectType.GetProperty("Y").GetValue(r, null);
-                    var width = (double)rectType.GetProperty("Width").GetValue(r, null);
-                    var height = (double)rectType.GetProperty("Height").GetValue(r, null);
-                    var isEmpty = (bool)rectType.GetProperty("IsEmpty").GetValue(r, null);
-                    
-                    if (!isEmpty)
-                    {
-                        Bounds = new Rectangle((int)x, (int)y, (int)width, (int)height);
-                    }
-                }
+                Bounds = uiElement.uiaObject.GetBounds();
             }
             catch (Exception ex)
             {
                 Debug("Unable to resolve BoundingRectangle: " + ex.ToString());
             };
 
-            //check to see if we may need to use Image2Text
-            if (!Bounds.IsEmpty && Class == "SamlEdgeBrowserHost")
+            //if we've got bounds, try several approaches to get the control text
+            if (!Bounds.IsEmpty)
             {
-                //try image to text
                 try
                 {
-                    Text = new BoundsToText(Bounds).Convert();
+                    Text = TextExtractor.ExtractText(uiElement);
                 }
                 catch (Exception ex)
                 {
-                    Debug("Failed to convert bounding rect to text: " + ex.ToString());
+                    Debug("Unable to extract raw control text: " + ex.ToString());
                 }
             }
 
-            var uiElement = new UIElement()
-            {
-                ID = ID,
-                Name = Name,
-                Class = Class,
-                Text = Text,
-                Type = TheControlType,
-                Bounds = Bounds,
-            };
+            uiElement.ID = ID;
+            uiElement.Name = Name;
+            uiElement.Class = Class;
+            uiElement.Text = Text;
+            uiElement.Type = TheControlType;
+            uiElement.Bounds = Bounds;
 
             return uiElement;
         }
@@ -800,6 +805,9 @@ namespace Disambiguator
             //make sure this form (if it exists) is closed.
             Debug("Releasing Report form");
             TestOutput.Release();
+
+            // Clean up native DLL loader
+            NativeDllLoader.Cleanup();
         }
 
 
@@ -881,11 +889,13 @@ namespace Disambiguator
 
     internal class UIElement
     {
+        public IntPtr hWnd { get; set; }
         public string ID { get; set; }
         public string Name { get; set; }
         public string Class { get; set; }
         public string Text { get; set; }
         public string Type { get; set; }
         public Rectangle Bounds { get; set; }
-    }
+        public AutomationElement uiaObject { get; set; }
+        }
 }

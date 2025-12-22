@@ -98,6 +98,8 @@
     <Compile Include="DisambiguatorHelp.Designer.cs">
       <DependentUpon>DisambiguatorHelp.cs</DependentUpon>
     </Compile>
+    <Compile Include="Extensions.cs" />
+    <Compile Include="NativeDllLoader.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -108,6 +110,7 @@
     <Compile Include="TestOutput.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="TextExtractor.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="DisambiguatorHelp.resx">
@@ -119,6 +122,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TestOutput.resx">
       <DependentUpon>TestOutput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include=".\Resources\NativeDLLs\x86\Tesseract.dll">
+      <Link>Resources\NativeDlls\x86\Tesseract.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include=".\Resources\NativeDLLs\x64\tesseract.dll">
+      <Link>Resources\NativeDlls\x64\tesseract.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -153,6 +162,10 @@
     <Content Include="UIAutomationClient.dll" />
     <Content Include="UIAutomationTypes.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\NativeDlls\x64\" />
+    <Folder Include="Resources\NativeDlls\x86\" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
@@ -164,15 +177,16 @@
   </Target>
   <PropertyGroup>
     <PostBuildEventDependsOn>
-      $(PostBuildEventDependsOn);
-      PostBuildMacros;
-    </PostBuildEventDependsOn>
-    <PostBuildEvent>IF $(ConfigurationName)==Release (
-cd /D "$(SolutionDir)"
-call CreatePlgx.bat @(VersionNumber)
-)</PostBuildEvent>
+			$(PostBuildEventDependsOn);
+			PostBuildMacros;
+		</PostBuildEventDependsOn>
+    <PostBuildEvent>
+			IF $(ConfigurationName)==Release (
+			cd /D "$(SolutionDir)"
+			call CreatePlgx.bat @(VersionNumber)
+			)
+		</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="..\packages\Tesseract.Net.SDK.4.6.411\build\Tesseract.Net.SDK.targets" Condition="Exists('..\packages\Tesseract.Net.SDK.4.6.411\build\Tesseract.Net.SDK.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
