@@ -18,6 +18,7 @@ namespace Disambiguator
         public DisambiguatorHelp()
         {
             InitializeComponent();
+            this.Resize += DisambiguatorHelp_Resize;
         }
 
 
@@ -40,6 +41,37 @@ namespace Disambiguator
         }
 
 
+        private void DisambiguatorHelp_Resize(object sender, EventArgs e)
+        {
+            // Resize the RTF control to fill the form's client area
+            // Leave some margin/padding if needed
+            if (this.rtfHelp != null)
+            {
+                // Get the current position and calculate new size
+                int margin = 10;
+                
+                // Adjust for the close button if it exists at the bottom
+                int bottomReserved = 0;
+                if (this.btnClose != null)
+                {
+                    bottomReserved = this.btnClose.Height + (margin * 2);
+                }
+                
+                // Set the RTF control size
+                this.rtfHelp.Location = new Point(margin, margin);
+                this.rtfHelp.Width = this.ClientSize.Width - (margin * 2);
+                this.rtfHelp.Height = this.ClientSize.Height - (margin * 2) - bottomReserved;
+                
+                // Position the close button at the bottom if it exists
+                if (this.btnClose != null)
+                {
+                    this.btnClose.Top = this.ClientSize.Height - this.btnClose.Height - margin;
+                    this.btnClose.Left = (this.ClientSize.Width - this.btnClose.Width) / 2;
+                }
+            }
+        }
+
+
         private void RtfHelp_LinkClicked(object sender, LinkClickedEventArgs e)
         {
             try
@@ -47,6 +79,11 @@ namespace Disambiguator
                 System.Diagnostics.Process.Start(e.LinkText);
             }
             catch { }
+        }
+
+        private void rtfHelp_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
