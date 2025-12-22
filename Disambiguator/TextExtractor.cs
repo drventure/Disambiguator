@@ -29,36 +29,29 @@ namespace Disambiguator
             if (uiElement == null) return string.Empty;
             if (uiElement.hWnd == IntPtr.Zero) return string.Empty;  
 
+            var buf = string.Empty;
             DisambiguatorExt.Debug("Attempting to extract Text from control HWND: " + uiElement.hWnd.ToString("X"));
             try
             {
                 // Try multiple approaches to extract Text
 
                 // Approach 1: Try to get HTML via UI Automation Value pattern
-                string text = TryGetHtmlViaValuePattern(uiElement);
-                if (!string.IsNullOrEmpty(text)) return text;
-
+                buf = TryGetHtmlViaValuePattern(uiElement);
+                
                 // Approach 2: Try to traverse document via UI Automation
-                text = TryGetHtmlViaDocumentTraversal(uiElement);
-                if (!string.IsNullOrEmpty(text))
-                {
-                    return text;
-                }
+                var text = TryGetHtmlViaDocumentTraversal(uiElement);
+                buf = string.IsNullOrEmpty(buf) ? text : buf + " - " + text;
 
                 // Approach 3: Try to get visible text content
                 text = TryGetVisibleText(uiElement);
-                if (!string.IsNullOrEmpty(text))
-                {
-                    return text;
-                }
-
-                return string.Empty;
+                buf = string.IsNullOrEmpty(buf) ? text : buf + " - " + text;
             }
             catch (Exception ex)
             {
                 DisambiguatorExt.Debug("Error extracting Text from control: " + ex.ToString());
-                return string.Empty;
             }
+
+            return buf;
         }
 
 

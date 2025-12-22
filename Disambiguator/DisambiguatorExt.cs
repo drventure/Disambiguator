@@ -277,16 +277,19 @@ namespace Disambiguator
                 ReportWrite("   Application of current target window: \"{0}\"", _exePath);
 
                 var uiElement = UIElementFromWindowHandle(targetWindowHandle);
-                uiElements.Add(uiElement);
-                var indent = "   ";
-                ReportWrite(indent, uiElement);
+                if (uiElement != null)
+                {
+                    uiElements.Add(uiElement);
+                    var indent = "   ";
+                    ReportWrite(indent, uiElement);
 
-                //Doesn't appear to be of much value
-                //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
-                //ReportWrite("{0}ParentID: {0}", parentID);
+                    //Doesn't appear to be of much value
+                    //var parentID = uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty);
+                    //ReportWrite("{0}ParentID: {0}", parentID);
 
-                //add children down to requested depth
-                uiElements.AddRange(TraverseControlChildren(uiElement.uiaObject, depth, indent));
+                    //add children down to requested depth
+                    uiElements.AddRange(TraverseControlChildren(uiElement.uiaObject, depth, indent));
+                }
             }
             catch (Exception ex)
             {
@@ -320,10 +323,13 @@ namespace Disambiguator
                 foreach (AutomationElement child in elementCollection)
                 {
                     var uiElement = UIElementFromAutomationElement(child);
-                    uiElements.Add(uiElement);
-                    ReportWrite(indent, uiElement);
-                    
-                    uiElements.AddRange(TraverseControlChildren(child, depth, indent));
+                    if (uiElement != null)
+                    {
+                        uiElements.Add(uiElement);
+                        ReportWrite(indent, uiElement);
+
+                        uiElements.AddRange(TraverseControlChildren(child, depth, indent));
+                    }
                 }
             }
             catch (Exception ex)
@@ -355,12 +361,14 @@ namespace Disambiguator
         {
             UIElement uiElement = null;
             if (uiaObject == null) return uiElement;
+
             var hWnd = new IntPtr((int)uiaObject.GetCurrentPropertyValue(AutomationElement.NativeWindowHandleProperty));
             uiElement = new UIElement()
             {
                 hWnd = hWnd,
                 uiaObject = uiaObject,
             };
+
             return ResolveUIElement(uiElement);
         }
 
@@ -381,46 +389,51 @@ namespace Disambiguator
             try
             {
                 ID = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+                Debug("   Resolved ID: " + ID);
             }
             catch (Exception ex)
             {
-                Debug("Unable to resolve AutomationID: " + ex.ToString());
+                Debug("   Unable to resolve AutomationID: " + ex.ToString());
                 ID = msg;
             };
             try
             {
                 Name = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                Debug("   Resolved Name: " + Name);
             }
             catch (Exception ex)
             {
-                Debug("Unable to resolve Name: " + ex.ToString());
+                Debug("   Unable to resolve Name: " + ex.ToString());
                 Name = msg;
             };
             try
             {
                 Class = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
+                Debug("   Resolved Class: " + Class);
             }
             catch (Exception ex)
             {
-                Debug("Unable to resolve ClassName: " + ex.ToString());
+                Debug("   Unable to resolve Class: " + ex.ToString());
                 Class = msg;
             };
             try
             {
                 TheControlType = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
+                Debug("   Resolved ControlType: " + TheControlType);
             }
             catch (Exception ex)
             {
-                Debug("Unable to resolve ControlType: " + ex.ToString());
+                Debug("   Unable to resolve ControlType: " + ex.ToString());
                 TheControlType = msg;
             };
             try
             {
                 Bounds = uiElement.uiaObject.GetBounds();
+                Debug("   Resolved BoundingRectangle: " + Bounds.ToString());   
             }
             catch (Exception ex)
             {
-                Debug("Unable to resolve BoundingRectangle: " + ex.ToString());
+                Debug("   Unable to resolve BoundingRectangle: " + ex.ToString());
             };
 
             //if we've got bounds, try several approaches to get the control text
@@ -432,7 +445,7 @@ namespace Disambiguator
                 }
                 catch (Exception ex)
                 {
-                    Debug("Unable to extract raw control text: " + ex.ToString());
+                    Debug("   Unable to extract raw control text: " + ex.ToString());
                 }
             }
 
@@ -445,6 +458,7 @@ namespace Disambiguator
 
             return uiElement;
         }
+
 
         /// <summary>
         /// Event fired once when Autotype sequence processes is complete
@@ -567,7 +581,7 @@ namespace Disambiguator
                 {
                     //parameter looks like it's got a path element, so compare to the whole exeName
                     match = (IsAMatch(_exePath, exeParam));
-                    if (!match) Debug("   Executable path '{0}' did not match '{1}'", _exePath, exeParam);
+                    Debug("   Executable path '{0}' {1} match '{2}'", _exePath, ((match) ? "did" : "did not"), exeParam);
                 }
                 else
                 {
@@ -579,21 +593,23 @@ namespace Disambiguator
                         exeParam += ".exe";
                     }
                     match = (IsAMatch(_exeFile, exeParam));
-                    if (!match) Debug("   Executable path '{0}' did not match '{1}'", _exePath, exeParam);
+                    Debug("   Executable path '{0}' {1} match '{2}'", _exePath, ((match) ? "did" : "did not"), exeParam);
                 }
             }
 
             //no EXE match, so check for any child control matches
             if (!match && !string.IsNullOrEmpty(ctlParam))
             {
+                Debug("   No match on exe, checking for match on ctlParam: {0}", ctlParam);
                 match = MatchOnControlTree(_currentUIElements, ctlParam);
+                Debug("   {0} on ctlParam: {1}", ((match) ? "MATCHED" : "No match"), ctlParam);
             }
 
             //if reporting is on we DO NOT want to match
             //!!!!NOTE!!!! Other keePass key entries +may still match+ if reporting is ON and could thus perform autotype!
+            Debug("   Sequence {0}", ((match) ? "MATCHED." : "did not match."));
             if (match)
             {
-                Debug("   Sequence matched.");
                 if (!_report)
                 {
                     Debug("   Adding Sequence to found list");
@@ -604,10 +620,6 @@ namespace Disambiguator
                 {
                     Debug("   Reporting on, so actual matching is disabled.");
                 }
-            }
-            else
-            {
-                Debug("   Sequence did not match.");
             }
         }
 
@@ -623,17 +635,16 @@ namespace Disambiguator
         {
             Debug("   Scanning control tree using ctlParam '{0}'", ctlParam);
 
-            var matches = uiElements.Where(u => 
-                IsAMatch(u.ID, ctlParam) || 
-                IsAMatch(u.Name, ctlParam) ||
-                IsAMatch(u.Class, ctlParam) ||
-                IsAMatch(u.Type, ctlParam) ||
-                IsAMatch(u.Text, ctlParam) 
-                ).ToList();
-            if (matches.Any())
+            Action<UIElement> logMatch = (i) => { Debug("      Matched on ID:'{0}' Name:'{1}'  Class:'{2}'  Type:'{3}'  Text: '{4}'", i.ID, i.Name, i.Class, i.Type, i.Text); };
+
+            //implemented this way to facilitate short-circuiting on first match and logging
+            foreach (var u in uiElements)
             {
-                matches.ForEach(m => Debug("      Matched on ID:'{0}' Name:'{1}'  Class:'{2}'  Type:'{3}'  Text: '{4}'", m.ID, m.Name, m.Class, m.Type, m.Text));
-                return true;
+                if (IsAMatch(u.ID, ctlParam)) { logMatch(u); return true; }
+                if (IsAMatch(u.Name, ctlParam)) { logMatch(u); return true; }
+                if (IsAMatch(u.Class, ctlParam)) { logMatch(u); return true; }
+                if (IsAMatch(u.Type, ctlParam)) { logMatch(u); return true; }
+                if (IsAMatch(u.Text, ctlParam)) { logMatch(u); return true; }
             }
 
             Debug("      No Match Found");
