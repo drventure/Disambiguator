@@ -375,61 +375,53 @@ namespace Disambiguator
 
         private UIElement ResolveUIElement(UIElement uiElement)
         {
-            //add the root control element to the list
-            string ID = string.Empty;
-            string Name = ID;
-            string Class = ID;
-            string TheControlType = string.Empty;
-            string Text = string.Empty;
-            Rectangle Bounds = new Rectangle();
-
             //attempt each of these resolutions, but if they fail, just ignore
             const string FAILED = "!Failed to resolve!";
             var msg = FAILED;
             try
             {
-                ID = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
-                Debug("   Resolved ID: " + ID);
+                uiElement.ID = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty) as string;
+                Debug("   Resolved ID: " + uiElement.ID);
             }
             catch (Exception ex)
             {
                 Debug("   Unable to resolve AutomationID: " + ex.ToString());
-                ID = msg;
+                uiElement.ID = msg;
             };
             try
             {
-                Name = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
-                Debug("   Resolved Name: " + Name);
+                uiElement.Name = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.NameProperty) as string;
+                Debug("   Resolved Name: " + uiElement.Name);
             }
             catch (Exception ex)
             {
                 Debug("   Unable to resolve Name: " + ex.ToString());
-                Name = msg;
+                uiElement.Name = msg;
             };
             try
             {
-                Class = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
-                Debug("   Resolved Class: " + Class);
+                uiElement.Class = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ClassNameProperty) as string;
+                Debug("   Resolved Class: " + uiElement.Class);
             }
             catch (Exception ex)
             {
                 Debug("   Unable to resolve Class: " + ex.ToString());
-                Class = msg;
+                uiElement.Class = msg;
             };
             try
             {
-                TheControlType = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
-                Debug("   Resolved ControlType: " + TheControlType);
+                uiElement.Type = uiElement.uiaObject.GetCurrentPropertyValue(AutomationElement.ControlTypeProperty) as string;
+                Debug("   Resolved ControlType: " + uiElement.Type);
             }
             catch (Exception ex)
             {
                 Debug("   Unable to resolve ControlType: " + ex.ToString());
-                TheControlType = msg;
+                uiElement.Type = msg;
             };
             try
             {
-                Bounds = uiElement.uiaObject.GetBounds();
-                Debug("   Resolved BoundingRectangle: " + Bounds.ToString());   
+                uiElement.Bounds = uiElement.uiaObject.GetBounds();
+                Debug("   Resolved BoundingRectangle: " + uiElement.Bounds.ToString());   
             }
             catch (Exception ex)
             {
@@ -437,24 +429,14 @@ namespace Disambiguator
             };
 
             //if we've got bounds, try several approaches to get the control text
-            if (!Bounds.IsEmpty)
+            try
             {
-                try
-                {
-                    Text = TextExtractor.ExtractText(uiElement);
-                }
-                catch (Exception ex)
-                {
-                    Debug("   Unable to extract raw control text: " + ex.ToString());
-                }
+                uiElement.Text = TextExtractor.ExtractText(uiElement);
             }
-
-            uiElement.ID = ID;
-            uiElement.Name = Name;
-            uiElement.Class = Class;
-            uiElement.Text = Text;
-            uiElement.Type = TheControlType;
-            uiElement.Bounds = Bounds;
+            catch (Exception ex)
+            {
+                Debug("   Unable to extract raw control text: " + ex.ToString());
+            }
 
             return uiElement;
         }

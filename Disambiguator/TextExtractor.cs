@@ -27,7 +27,7 @@ namespace Disambiguator
         internal static string ExtractText(UIElement uiElement)
         {
             if (uiElement == null) return string.Empty;
-            if (uiElement.hWnd == IntPtr.Zero) return string.Empty;  
+            if (uiElement.hWnd == IntPtr.Zero) return string.Empty;
 
             var buf = string.Empty;
             DisambiguatorExt.Debug("Attempting to extract Text from control HWND: " + uiElement.hWnd.ToString("X"));
@@ -37,7 +37,7 @@ namespace Disambiguator
 
                 // Approach 1: Try to get HTML via UI Automation Value pattern
                 buf = TryGetHtmlViaValuePattern(uiElement);
-                
+
                 // Approach 2: Try to traverse document via UI Automation
                 var text = TryGetHtmlViaDocumentTraversal(uiElement);
                 buf = string.IsNullOrEmpty(buf) ? text : buf + " - " + text;
@@ -127,7 +127,7 @@ namespace Disambiguator
 
             try
             {
-        
+
                 // Find all text elements and hyperlinks
                 StringBuilder htmlBuilder = new StringBuilder();
 
@@ -181,19 +181,26 @@ namespace Disambiguator
         /// </summary>
         private static string TryGetVisibleText(UIElement uiElement)
         {
-            if (uiElement.uiaObject == null) return string.Empty;   
+            DisambiguatorExt.Debug("TryGetVisibleText");
+
+            if (uiElement.uiaObject == null)
+            {
+                DisambiguatorExt.Debug("TryGetVisibleText - UI Automation object is null for HWND: " + uiElement.hWnd.ToString("X"));
+                return string.Empty;
+            }
 
             try
             {
-                if (!uiElement.Bounds.IsEmpty)
+                if (uiElement.Bounds.IsEmpty)
                 {
-                    // Use the existing BoundsToText functionality
-                    var text = new BoundsToText(uiElement.Bounds).Convert();
-                    DisambiguatorExt.Debug("Extracted Visible Text: " + text);
-                    return text;
+                    DisambiguatorExt.Debug("TryGetVisibleText - Bounds is empty for HWND: " + uiElement.hWnd.ToString("X"));
+                    return string.Empty;
                 }
 
-                return string.Empty;
+                // Use the existing BoundsToText functionality
+                var text = new BoundsToText(uiElement.Bounds).Convert();
+                DisambiguatorExt.Debug("Extracted Visible Text: " + text);
+                return text;
             }
             catch (Exception ex)
             {

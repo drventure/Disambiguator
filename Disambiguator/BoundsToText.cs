@@ -11,12 +11,13 @@ namespace Disambiguator
     /// <summary>
     /// Class used to convert a bounds on screen into text
     /// </summary>
-    public class BoundsToText
+    internal class BoundsToText
     {
         Rectangle _bounds = new Rectangle();
 
-        public BoundsToText(Rectangle bounds)
+        internal BoundsToText(Rectangle bounds)
         {
+            DisambiguatorExt.Debug("BoundsToText created with bounds: " + bounds.ToString());
             _bounds = bounds;
         }
 
@@ -38,6 +39,7 @@ namespace Disambiguator
                 graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy);
             }
 
+            DisambiguatorExt.Debug("BoundsToText snapshotted using bounds: " + bounds.ToString());
             return bitmap;
         }
 
@@ -51,32 +53,42 @@ namespace Disambiguator
             //guard conditions
             if (_bounds.IsEmpty) { return string.Empty; }
 
+            var text = string.Empty;
+
             // Ensure native Tesseract DLL is loaded from embedded resources
+            DisambiguatorExt.Debug("BoundsToText loading Tesseract");
             NativeDllLoader.EnsureTesseractLoaded();
+            DisambiguatorExt.Debug("BoundsToText loaded Tesseract");
 
             using (var api = OcrApi.Create())
             {
+                DisambiguatorExt.Debug("BoundsToText created Tesseract api: " + api.Handle);
+
                 api.Init(Languages.English);
+                DisambiguatorExt.Debug("BoundsToText Tesseract Inited");
 
                 var bitmap = Snapshot(_bounds);
+                DisambiguatorExt.Debug("BoundsToText snapshotted");
 
-                if (bitmap != null) 
-                {
-                    var text = api.GetTextFromImage(bitmap) ?? string.Empty;
-                    text = text.Replace('\n', ' ');
-                    text = text.Replace('\r', ' ');
-                    text = text.Replace('\t', ' ');
-                    text = text.Replace("     ", " ");
-                    text = text.Replace("    ", " ");
-                    text = text.Replace("   ", " ");
-                    text = text.Replace("  ", " ");
-                    text = text.Trim();
-                    return text;
-                }
-                else
-                {
-                    return string.Empty;
-                }
+                //bail early if we couldn't get a bitmap
+                if (bitmap == null) return text;
+
+                DisambiguatorExt.Debug("BoundsToText got bitmap");
+                text = api.GetTextFromImage(bitmap) ?? string.Empty;
+                DisambiguatorExt.Debug("BoundsToText resolve text as raw: " + text);
+
+                text = text.Replace('\n', ' ');
+                text = text.Replace('\r', ' ');
+                text = text.Replace('\t', ' ');
+                text = text.Replace("     ", " ");
+                text = text.Replace("    ", " ");
+                text = text.Replace("   ", " ");
+                text = text.Replace("  ", " ");
+                text = text.Trim();
+
+                DisambiguatorExt.Debug("BoundsToText cleaned text: " + text);
+
+                return text;
             }
         }
     }
