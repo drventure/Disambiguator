@@ -168,9 +168,9 @@ Bugs can be reported using the issue tracker, for anything else, a wiki is avail
 Changelog
 --------
 v1.0.10.0
-Added support for ImageToText searching of embedded Edge browser windows, specifically for 
-disambiguating Single Sign On windows that might display multiple prompts which have to be
-disambiguated.
+Added support for scanning into WebView controls for searching of embedded Edge browser windows, 
+specifically for disambiguating Single Sign On windows that might display multiple prompts which 
+have to be disambiguated.
 
 v1.0.9.0
 Resolved issue where you might occasionally get an error message about 
