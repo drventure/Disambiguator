@@ -818,7 +818,7 @@ namespace Disambiguator
         /// <param name="args"></param>
         internal static void Debug(string template, params object[] args)
         {
-            if (_loggingOn || true)
+            if (_loggingOn)
             {
                 try
                 {
