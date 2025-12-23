@@ -54,10 +54,6 @@ if not exist "%~dp0Releases\v%version%\NUL" mkdir "%~dp0Releases\v%version%"
 
 echo Copying plugin source to the PlgX folder
 robocopy ".\Disambiguator" ".\PlgX" /E /XF *.user *.sln *.suo *.pdb *.plgx *.exe *.exe.config /XD bin obj
-robocopy ".\Disambiguator\bin\Release\tessdata" ".\PlgX\tessdata" /E
-robocopy ".\Disambiguator\bin\Release\x64" ".\PlgX\x64" /E
-robocopy ".\Disambiguator\bin\Release\x86" ".\PlgX\x86" /E
-robocopy ".\Disambiguator\bin\Release" ".\PlgX" /E patagames.ocr.dll
 
 echo Compiling PlgX
 @echo on
