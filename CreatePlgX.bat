@@ -36,7 +36,8 @@ for /F "delims=. tokens=1,2,3,4" %%J in ("%version%") do (set major=%%J&set mino
 )>"VERSION."
 
 echo Deleting existing PlgX folder
-if exist Plgx rmdir /s /q PlgX
+if exist ".\Plgx" rmdir /s /q "PlgX"
+if exist ".\Releases\Build Outputs" rmdir /s /q ".\Releases\Build Outputs"
 
 echo Creating a temporary PlgX folder for the plugin source
 if not exist Plgx\nul mkdir PlgX
@@ -84,8 +85,8 @@ endlocal
 
 
 echo Cleaning up
-rmdir ".\PlgX" /S /Q
-rmdir ".\Releases\Build Outputs" /S /Q
+rem rmdir ".\PlgX" /S /Q
+rem rmdir ".\Releases\Build Outputs" /S /Q
 
 
 :Done

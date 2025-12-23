@@ -123,12 +123,6 @@
     <EmbeddedResource Include="TestOutput.resx">
       <DependentUpon>TestOutput.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include=".\Resources\NativeDLLs\x86\Tesseract.dll">
-      <Link>Resources\NativeDlls\x86\Tesseract.dll</Link>
-    </EmbeddedResource>
-    <EmbeddedResource Include=".\Resources\NativeDLLs\x64\tesseract.dll">
-      <Link>Resources\NativeDlls\x64\tesseract.dll</Link>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="DisambiguatorHelp.rtf" />
@@ -136,21 +130,18 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="tessdata\configs\config.cfg">
+    <EmbeddedResource Include="tessdata\eng.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="tessdata\eng.traineddata">
+    </EmbeddedResource>
+    <EmbeddedResource Include="tessdata\equ.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="tessdata\equ.traineddata">
+    </EmbeddedResource>
+    <EmbeddedResource Include="tessdata\osd.traineddata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="tessdata\osd.traineddata">
+    </EmbeddedResource>
+    <EmbeddedResource Include="tessdata\pdf.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="tessdata\pdf.ttf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="KeePass.exe.config">
@@ -159,13 +150,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Patagames.Ocr.dll" />
+    <EmbeddedResource Include="Resources\NativeDlls\x64\tesseract.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\NativeDlls\x86\Tesseract.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
     <Content Include="UIAutomationClient.dll" />
     <Content Include="UIAutomationTypes.dll" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\NativeDlls\x64\" />
-    <Folder Include="Resources\NativeDlls\x86\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">

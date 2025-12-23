@@ -64,7 +64,7 @@ namespace Disambiguator
             {
                 DisambiguatorExt.Debug("BoundsToText created Tesseract api: " + api.Handle);
 
-                api.Init(Languages.English);
+                api.Init(Languages.English, NativeDllLoader.TessDataPath);
                 DisambiguatorExt.Debug("BoundsToText Tesseract Inited");
 
                 var bitmap = Snapshot(_bounds);
