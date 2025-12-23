@@ -11,6 +11,7 @@
     <RootNamespace>Disambiguator</RootNamespace>
     <AssemblyName>Disambiguator</AssemblyName>
     <SignAssembly>true</SignAssembly>
+    <LangVersion>5</LangVersion>
     <AssemblyOriginatorKeyFile>
     </AssemblyOriginatorKeyFile>
     <FileUpgradeFlags>
@@ -73,9 +74,6 @@
     <Reference Include="KeePass">
       <HintPath>..\KeePass\KeePass.exe</HintPath>
     </Reference>
-    <Reference Include="Patagames.Ocr, Version=4.6.2.46, Culture=neutral, PublicKeyToken=be14d8e1fe46e570, processorArchitecture=MSIL">
-      <HintPath>.\Patagames.Ocr.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -91,7 +89,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BoundsToText.cs" />
     <Compile Include="DisambiguatorHelp.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -99,7 +96,6 @@
       <DependentUpon>DisambiguatorHelp.cs</DependentUpon>
     </Compile>
     <Compile Include="Extensions.cs" />
-    <Compile Include="NativeDllLoader.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -129,19 +125,6 @@
     <None Include="KeePass.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="packages.config" />
-    <EmbeddedResource Include="tessdata\eng.traineddata">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="tessdata\equ.traineddata">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="tessdata\osd.traineddata">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="tessdata\pdf.ttf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="KeePass.exe.config">
@@ -149,13 +132,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Patagames.Ocr.dll" />
-    <EmbeddedResource Include="Resources\NativeDlls\x64\tesseract.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\NativeDlls\x86\Tesseract.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
     <Content Include="UIAutomationClient.dll" />
     <Content Include="UIAutomationTypes.dll" />
   </ItemGroup>
@@ -185,7 +161,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Tesseract.Net.SDK.4.6.411\build\Tesseract.Net.SDK.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Tesseract.Net.SDK.4.6.411\build\Tesseract.Net.SDK.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -79,9 +79,6 @@ namespace Disambiguator
 
             _keePassHost = host;
 
-            // Initialize native DLL loader for Tesseract
-            NativeDllLoader.Initialize();
-
             AutoType.SequenceQuery += AutoType_SequenceQuery;
             AutoType.SequenceQueriesBegin += AutoType_SequenceQueriesBegin;
             AutoType.SequenceQueriesEnd += AutoType_SequenceQueriesEnd;
@@ -798,9 +795,6 @@ namespace Disambiguator
             //make sure this form (if it exists) is closed.
             Debug("Releasing Report form");
             TestOutput.Release();
-
-            // Clean up native DLL loader
-            NativeDllLoader.Cleanup();
         }
 
 

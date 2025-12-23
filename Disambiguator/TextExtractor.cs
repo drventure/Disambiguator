@@ -189,24 +189,25 @@ namespace Disambiguator
                 return string.Empty;
             }
 
-            try
-            {
-                if (uiElement.Bounds.IsEmpty)
-                {
-                    DisambiguatorExt.Debug("TryGetVisibleText - Bounds is empty for HWND: " + uiElement.hWnd.ToString("X"));
-                    return string.Empty;
-                }
+            ///disabling OCR for now
+            //try
+            //{
+            //    if (uiElement.Bounds.IsEmpty)
+            //    {
+            //        DisambiguatorExt.Debug("TryGetVisibleText - Bounds is empty for HWND: " + uiElement.hWnd.ToString("X"));
+            //        return string.Empty;
+            //    }
 
-                // Use the existing BoundsToText functionality
-                var text = new BoundsToText(uiElement.Bounds).Convert();
-                DisambiguatorExt.Debug("Extracted Visible Text: " + text);
-                return text;
-            }
-            catch (Exception ex)
-            {
-                DisambiguatorExt.Debug("Error in TryGetVisibleText: " + ex.ToString());
-                return string.Empty;
-            }
+            //    // Use the existing BoundsToText functionality
+            //    var text = new BoundsToText(uiElement.Bounds).Convert();
+            //    DisambiguatorExt.Debug("Extracted Visible Text: " + text);
+            //    return text;
+            //}
+            //catch (Exception ex)
+            //{
+            //    DisambiguatorExt.Debug("Error in TryGetVisibleText: " + ex.ToString());
+            //}
+            return string.Empty;
         }
 
 
